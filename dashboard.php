@@ -385,49 +385,95 @@ require_once __DIR__ . "/header.php";
     <div class="col-12"><div class="flash error"><?= e2($flash) ?></div></div>
   <?php endif; ?>
 
-  <?php if ($tab === "events"): ?>
-    <div class="col-8">
-      <div class="chartBox">
-        <div class="chartHead">
-          <div>
-            <div class="chartTitle">Events Trend</div>
-            <div class="chartSub">Switch between 7 days, 30 days, and 6 months</div>
+  <?php if (($_SESSION["user"]["role"] ?? "") === "admin"): 
+    $pendingCount = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE status = 'Pending'")->fetchColumn();
+    if ($pendingCount > 0): ?>
+      <div class="col-12">
+        <div class="flash" style="background: rgba(124,92,255,0.15); border: 1px solid var(--brand); display:flex; justify-content:space-between; align-items:center;">
+          <div><strong>🔔 <?= $pendingCount ?> User<?= $pendingCount > 1 ? 's' : '' ?></strong> waiting for approval.</div>
+          <a href="admin_users.php" class="btn btn-ghost" style="padding:4px 12px; font-size:0.8rem;">Review Now</a>
+        </div>
+      </div>
+    <?php endif; ?>
+  <?php endif; ?>
 
-            <div class="seg" role="group" aria-label="Events trend range">
-              <button type="button" class="active" data-range="7">7 Days</button>
-              <button type="button" data-range="30">30 Days</button>
-              <button type="button" data-range="6m">6 Months</button>
+  <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
+    <?php if ($tab === "events"): ?>
+      <div class="col-8">
+        <div class="chartBox">
+          <div class="chartHead">
+            <div>
+              <div class="chartTitle">Events Trend</div>
+              <div class="chartSub">Switch between 7 days, 30 days, and 6 months</div>
+
+              <div class="seg" role="group" aria-label="Events trend range">
+                <button type="button" class="active" data-range="7">7 Days</button>
+                <button type="button" data-range="30">30 Days</button>
+                <button type="button" data-range="6m">6 Months</button>
+              </div>
             </div>
+            <div class="tag">Analytics</div>
           </div>
-          <div class="tag">Analytics</div>
+          <div class="canvasWrap"><canvas id="eventsLine"></canvas></div>
         </div>
-        <div class="canvasWrap"><canvas id="eventsLine"></canvas></div>
       </div>
-    </div>
 
-    <div class="col-4">
-      <div class="chartBox">
-        <div class="chartHead">
-          <div>
-            <div class="chartTitle">Attendance Status</div>
-            <div class="chartSub">Distribution overview</div>
+      <div class="col-4">
+        <div class="chartBox">
+          <div class="chartHead">
+            <div>
+              <div class="chartTitle">Attendance Status</div>
+              <div class="chartSub">Distribution overview</div>
+            </div>
+            <div class="tag">Live</div>
           </div>
-          <div class="tag">Live</div>
+          <div class="canvasWrap"><canvas id="attendancePie"></canvas></div>
         </div>
-        <div class="canvasWrap"><canvas id="attendancePie"></canvas></div>
       </div>
-    </div>
 
+      <div class="col-12">
+        <div class="chartBox">
+          <div class="chartHead">
+            <div>
+              <div class="chartTitle">Event Status Summary</div>
+              <div class="chartSub">Scheduled vs Ongoing vs Completed vs Cancelled</div>
+            </div>
+            <div class="tag">Insights</div>
+          </div>
+          <div class="canvasWrap"><canvas id="eventStatusBar"></canvas></div>
+        </div>
+      </div>
+    <?php endif; ?>
+  <?php else: ?>
+    <!-- Member View: Upcoming Events List -->
     <div class="col-12">
       <div class="chartBox">
         <div class="chartHead">
           <div>
-            <div class="chartTitle">Event Status Summary</div>
-            <div class="chartSub">Scheduled vs Ongoing vs Completed vs Cancelled</div>
+            <div class="chartTitle">🌟 Upcoming Church Events</div>
+            <div class="chartSub">Join us in fellowship and service</div>
           </div>
-          <div class="tag">Insights</div>
+          <div class="tag">Upcoming</div>
         </div>
-        <div class="canvasWrap"><canvas id="eventStatusBar"></canvas></div>
+        <div style="margin-top:15px; display:grid; gap:12px;">
+          <?php 
+          $upcoming = $pdo->query("SELECT title, event_date, location, status FROM events WHERE event_date >= CURDATE() ORDER BY event_date ASC LIMIT 5")->fetchAll(PDO::FETCH_ASSOC);
+          if (empty($upcoming)): ?>
+            <div style="padding:20px; text-align:center; color:var(--muted);">No upcoming events scheduled. Check back soon!</div>
+          <?php endif; ?>
+          <?php foreach ($upcoming as $ev): ?>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:14px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
+              <div>
+                <div style="font-weight:950; font-size:1.1rem;"><?= e2($ev["title"]) ?></div>
+                <div style="font-size:0.85rem; color:var(--muted); margin-top:2px;">📍 <?= e2($ev["location"]) ?> • 📅 <?= e2($ev["event_date"]) ?></div>
+              </div>
+              <span class="tag" style="background:rgba(46,233,166,0.15); color:#2ee9a6;"><?= e2($ev["status"]) ?></span>
+            </div>
+          <?php endforeach; ?>
+        </div>
+        <div style="margin-top:15px; text-align:right;">
+          <a href="events.php" class="btn btn-ghost" style="font-size:0.85rem;">View Full Calendar →</a>
+        </div>
       </div>
     </div>
   <?php endif; ?>

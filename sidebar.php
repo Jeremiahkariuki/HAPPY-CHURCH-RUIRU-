@@ -15,8 +15,13 @@ $active = basename($_SERVER["PHP_SELF"]);
     <a class="nav-item <?= $active==='dashboard.php'?'active':'' ?>" href="dashboard.php">Dashboard</a>
     <a class="nav-item <?= $active==='events.php'?'active':'' ?>" href="events.php">Events</a>
     <a class="nav-item <?= $active==='volunteers.php'?'active':'' ?>" href="volunteers.php">Volunteers</a>
-    <a class="nav-item <?= $active==='attendees.php'?'active':'' ?>" href="attendees.php">Attendees</a>
+    <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
+      <a class="nav-item <?= $active==='attendees.php'?'active':'' ?>" href="attendees.php">Attendees</a>
+    <?php endif; ?>
     <a class="nav-item <?= $active==='contacts.php'?'active':'' ?>" href="contacts.php">Contacts</a>
+    <?php if (($_SESSION["user"]["role"] ?? "") === "admin"): ?>
+      <a class="nav-item <?= $active==='admin_users.php'?'active':'' ?>" href="admin_users.php">Users</a>
+    <?php endif; ?>
     <a class="nav-item <?= $active==='about.php'?'active':'' ?>" href="about.php">About</a>
   </nav>
 
