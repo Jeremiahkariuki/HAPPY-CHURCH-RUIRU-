@@ -114,64 +114,66 @@ require_once __DIR__ . "/header.php";
 </div>
 
 <div class="grid">
-  <!-- Top: Form (Full Width) -->
-  <div class="col-12">
-    <div class="card">
-      <div style="font-weight:950; font-size:1.4rem;">
-        <?= $edit ? "Edit Volunteer" : "Add Volunteer" ?>
+  <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
+    <!-- Top: Form (Full Width) -->
+    <div class="col-12">
+      <div class="card">
+        <div style="font-weight:950; font-size:1.4rem;">
+          <?= $edit ? "Edit Volunteer" : "Add Volunteer" ?>
+        </div>
+        <div class="small">Manage serving teams with order and clarity.</div>
+
+        <form method="post" style="margin-top:20px; display:grid; gap:20px;">
+          <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
+          <input type="hidden" name="mode" value="<?= $edit ? "update" : "create" ?>">
+          <?php if ($edit): ?><input type="hidden" name="id" value="<?= (int)$edit["id"] ?>"><?php endif; ?>
+
+          <div class="grid">
+            <div class="col-6">
+              <label class="small">Full Name</label>
+              <input class="input" name="full_name" required value="<?= e($edit["full_name"] ?? "") ?>" placeholder="e.g. John Mwangi">
+            </div>
+            <div class="col-6">
+              <label class="small">Ministry / Department</label>
+              <input class="input" name="ministry" required value="<?= e($edit["ministry"] ?? "") ?>" placeholder="Choir, Media, Ushering...">
+            </div>
+
+            <div class="col-4">
+              <label class="small">Phone</label>
+              <input class="input" name="phone" value="<?= e($edit["phone"] ?? "") ?>" placeholder="e.g. 0712...">
+            </div>
+            <div class="col-4">
+              <label class="small">Email</label>
+              <input class="input" type="email" name="email" value="<?= e($edit["email"] ?? "") ?>" placeholder="e.g. name@email.com">
+            </div>
+            <div class="col-4">
+              <label class="small">Availability</label>
+              <select class="select" name="availability">
+                <?php
+                  foreach (["Weekdays","Weekends","Both"] as $o) {
+                    $sel = ($o === ($edit["availability"] ?? "Both")) ? "selected" : "";
+                    echo "<option $sel>".e($o)."</option>";
+                  }
+                ?>
+              </select>
+            </div>
+
+            <div class="col-12">
+              <label class="small">Notes</label>
+              <textarea class="textarea" name="notes" placeholder="Extra notes..." style="min-height:46px;"><?= e($edit["notes"] ?? "") ?></textarea>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:12px;">
+            <button class="btn" type="submit" style="min-width:180px; padding:12px;"><?= $edit ? "Save Changes" : "Add Volunteer" ?></button>
+            <?php if ($edit): ?>
+              <a class="btn btn-ghost" href="volunteers.php">Cancel</a>
+            <?php endif; ?>
+          </div>
+        </form>
       </div>
-      <div class="small">Manage serving teams with order and clarity.</div>
-
-      <form method="post" style="margin-top:20px; display:grid; gap:20px;">
-        <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
-        <input type="hidden" name="mode" value="<?= $edit ? "update" : "create" ?>">
-        <?php if ($edit): ?><input type="hidden" name="id" value="<?= (int)$edit["id"] ?>"><?php endif; ?>
-
-        <div class="grid">
-          <div class="col-6">
-            <label class="small">Full Name</label>
-            <input class="input" name="full_name" required value="<?= e($edit["full_name"] ?? "") ?>" placeholder="e.g. John Mwangi">
-          </div>
-          <div class="col-6">
-            <label class="small">Ministry / Department</label>
-            <input class="input" name="ministry" required value="<?= e($edit["ministry"] ?? "") ?>" placeholder="Choir, Media, Ushering...">
-          </div>
-
-          <div class="col-4">
-            <label class="small">Phone</label>
-            <input class="input" name="phone" value="<?= e($edit["phone"] ?? "") ?>" placeholder="e.g. 0712...">
-          </div>
-          <div class="col-4">
-            <label class="small">Email</label>
-            <input class="input" type="email" name="email" value="<?= e($edit["email"] ?? "") ?>" placeholder="e.g. name@email.com">
-          </div>
-          <div class="col-4">
-            <label class="small">Availability</label>
-            <select class="select" name="availability">
-              <?php
-                foreach (["Weekdays","Weekends","Both"] as $o) {
-                  $sel = ($o === ($edit["availability"] ?? "Both")) ? "selected" : "";
-                  echo "<option $sel>".e($o)."</option>";
-                }
-              ?>
-            </select>
-          </div>
-
-          <div class="col-12">
-            <label class="small">Notes</label>
-            <textarea class="textarea" name="notes" placeholder="Extra notes..." style="min-height:46px;"><?= e($edit["notes"] ?? "") ?></textarea>
-          </div>
-        </div>
-
-        <div style="display:flex; gap:12px;">
-          <button class="btn" type="submit" style="min-width:180px; padding:12px;"><?= $edit ? "Save Changes" : "Add Volunteer" ?></button>
-          <?php if ($edit): ?>
-            <a class="btn btn-ghost" href="volunteers.php">Cancel</a>
-          <?php endif; ?>
-        </div>
-      </form>
     </div>
-  </div>
+  <?php endif; ?>
 
   <!-- Bottom: List (Full Width) -->
   <div class="col-12">
@@ -208,7 +210,10 @@ require_once __DIR__ . "/header.php";
           <table class="table">
             <thead>
               <tr>
-                <th>Name</th><th>Ministry</th><th>Phone / Email</th><th>Availability</th><th>Actions</th>
+                <th>Name</th><th>Ministry</th><th>Phone / Email</th><th>Availability</th>
+                <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
+                  <th>Actions</th>
+                <?php endif; ?>
               </tr>
             </thead>
             <tbody>
@@ -229,11 +234,13 @@ require_once __DIR__ . "/header.php";
                   <td>
                     <span style="font-weight:800; font-size:0.85rem; color:var(--brand2);">📂 <?= e($r["availability"]) ?></span>
                   </td>
-                  <td class="actions">
-                    <a class="btn btn-ghost" href="volunteers.php?action=edit&id=<?= (int)$r["id"] ?>">Edit</a>
-                    <a class="btn btn-danger" href="volunteers.php?action=delete&id=<?= (int)$r["id"] ?>"
-                       onclick="return confirm('Delete this volunteer?');">Delete</a>
-                  </td>
+                  <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
+                    <td class="actions">
+                      <a class="btn btn-ghost" href="volunteers.php?action=edit&id=<?= (int)$r["id"] ?>">Edit</a>
+                      <a class="btn btn-danger" href="volunteers.php?action=delete&id=<?= (int)$r["id"] ?>"
+                         onclick="return confirm('Delete this volunteer?');">Delete</a>
+                    </td>
+                  <?php endif; ?>
                 </tr>
               <?php endforeach; ?>
               <?php if (!$rows): ?>

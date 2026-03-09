@@ -31,7 +31,7 @@ function ensure_admin(PDO $pdo): void {
 
     if ($id === 0) {
         $ins = $pdo->prepare(
-            "INSERT INTO users (username,password_hash,role) VALUES (?,?, 'admin')"
+            "INSERT INTO users (username,password_hash,role,status) VALUES (?,?, 'admin', 'Approved')"
         );
         $ins->execute(["admin",$hash]);
     }
@@ -63,7 +63,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $password = $_POST["password"] ?? "";
 
     $stmt = $pdo->prepare(
-        "SELECT id,username,role,password_hash 
+        "SELECT id,username,role,password_hash,status 
          FROM users 
          WHERE LOWER(username)=LOWER(?) 
          LIMIT 1"
@@ -72,21 +72,28 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $stmt->execute([$username_value]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($user && password_verify($password,$user["password_hash"])) {
+    if ($user && password_verify($password, $user["password_hash"])) {
+        // Auto-approve admin role if status column exists but isn't set, or specifically check status
+        $status = $user["status"] ?? "Pending";
+        if ($user["role"] === "admin") { $status = "Approved"; } // Safety for admin
 
-        session_regenerate_id(true);
+        if ($status !== "Approved") {
+            $error = "Your account is " . e($status) . ". Please wait for Admin approval.";
+        } else {
+            session_regenerate_id(true);
 
-        $_SESSION["user"] = [
-            "id" => $user["id"],
-            "username" => $user["username"],
-            "role" => $user["role"]
-        ];
+            $_SESSION["user"] = [
+                "id" => $user["id"],
+                "username" => $user["username"],
+                "role" => $user["role"]
+            ];
 
-        header("Location: dashboard.php");
-        exit;
+            header("Location: dashboard.php");
+            exit;
+        }
+    } else {
+        $error = "Invalid username or password.";
     }
-
-    $error = "Invalid username or password.";
     }
 }
 ?>
@@ -134,6 +141,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </div>
 
 <button class="btn" type="submit">Login</button>
+
+<div class="small" style="margin-top:10px; text-align:center;">
+  Don't have an account? <a href="register.php" style="color:var(--brand);font-weight:800;text-decoration:none;">Create Account</a>
+</div>
 
 </form>
 

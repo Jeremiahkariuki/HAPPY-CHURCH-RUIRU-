@@ -159,10 +159,12 @@ function isActiveTab(string $t, string $currentTab, string $page): bool {
       <span></span>
     </a>
 
-    <a class="drawer-item <?= $current_page==="attendees.php" ? "active" : "" ?>" href="attendees.php">
-      <span class="drawer-left">👥 <span>Attendees</span></span>
-      <span></span>
-    </a>
+    <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
+      <a class="drawer-item <?= $current_page==="attendees.php" ? "active" : "" ?>" href="attendees.php">
+        <span class="drawer-left">👥 <span>Attendees</span></span>
+        <span></span>
+      </a>
+    <?php endif; ?>
 
     <div class="drawer-section">CHURCH</div>
 
@@ -170,6 +172,13 @@ function isActiveTab(string $t, string $currentTab, string $page): bool {
       <span class="drawer-left">📞 <span>Contacts</span></span>
       <span></span>
     </a>
+
+    <?php if (($_SESSION["user"]["role"] ?? "") === "admin"): ?>
+      <a class="drawer-item <?= $current_page==="admin_users.php" ? "active" : "" ?>" href="admin_users.php">
+        <span class="drawer-left">👥 <span>Users</span></span>
+        <span class="drawer-pill">Admin</span>
+      </a>
+    <?php endif; ?>
 
     <a class="drawer-item <?= $current_page==="about.php" ? "active" : "" ?>" href="about.php">
       <span class="drawer-left">✨ <span>About</span></span>

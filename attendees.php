@@ -132,69 +132,71 @@ require_once __DIR__ . "/header.php";
 </div>
 
 <div class="grid">
-  <!-- Top: Form (Full Width) -->
-  <div class="col-12">
-    <div class="card">
-      <div style="font-weight:950; font-size:1.4rem;">
-        <?= $edit ? "Edit Attendee" : "Add Attendee" ?>
+  <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
+    <!-- Top: Form (Full Width) -->
+    <div class="col-12">
+      <div class="card">
+        <div style="font-weight:950; font-size:1.4rem;">
+          <?= $edit ? "Edit Attendee" : "Add Attendee" ?>
+        </div>
+        <div class="small">Track attendance and strengthen community.</div>
+
+        <form method="post" style="margin-top:20px; display:grid; gap:20px;">
+          <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
+          <input type="hidden" name="mode" value="<?= $edit ? "update" : "create" ?>">
+          <?php if ($edit): ?><input type="hidden" name="id" value="<?= (int)$edit["id"] ?>"><?php endif; ?>
+
+          <div class="grid">
+            <div class="col-6">
+              <label class="small">Full Name</label>
+              <input class="input" name="full_name" required value="<?= e($edit["full_name"] ?? "") ?>" placeholder="e.g. Jane Doe">
+            </div>
+            <div class="col-6">
+              <label class="small">Email</label>
+              <input class="input" type="email" name="email" value="<?= e($edit["email"] ?? "") ?>" placeholder="e.g. jane@example.com">
+            </div>
+
+            <div class="col-4">
+              <label class="small">Phone</label>
+              <input class="input" name="phone" value="<?= e($edit["phone"] ?? "") ?>" placeholder="e.g. 0712...">
+            </div>
+            <div class="col-4">
+              <label class="small">Event</label>
+              <select class="select" name="event_id">
+                <option value="">(No specific event)</option>
+                <?php
+                  $cur = $edit["event_id"] ?? "";
+                  foreach ($events as $ev) {
+                    $sel = ((string)$ev["id"] === (string)$cur) ? "selected" : "";
+                    $label = $ev["title"] . " • " . $ev["event_date"];
+                    echo "<option value='".(int)$ev["id"]."' $sel>".e($label)."</option>";
+                  }
+                ?>
+              </select>
+            </div>
+            <div class="col-4">
+              <label class="small">Status</label>
+              <select class="select" name="attendance_status">
+                <?php
+                  foreach (["Registered","Confirmed","Attended","Cancelled"] as $o) {
+                    $sel = ($o === ($edit["attendance_status"] ?? "Registered")) ? "selected" : "";
+                    echo "<option $sel>".e($o)."</option>";
+                  }
+                ?>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:12px;">
+            <button class="btn" type="submit" style="min-width:180px; padding:12px;"><?= $edit ? "Save Changes" : "Add Attendee" ?></button>
+            <?php if ($edit): ?>
+              <a class="btn btn-ghost" href="attendees.php">Cancel</a>
+            <?php endif; ?>
+          </div>
+        </form>
       </div>
-      <div class="small">Track attendance and strengthen community.</div>
-
-      <form method="post" style="margin-top:20px; display:grid; gap:20px;">
-        <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
-        <input type="hidden" name="mode" value="<?= $edit ? "update" : "create" ?>">
-        <?php if ($edit): ?><input type="hidden" name="id" value="<?= (int)$edit["id"] ?>"><?php endif; ?>
-
-        <div class="grid">
-          <div class="col-6">
-            <label class="small">Full Name</label>
-            <input class="input" name="full_name" required value="<?= e($edit["full_name"] ?? "") ?>" placeholder="e.g. Jane Doe">
-          </div>
-          <div class="col-6">
-            <label class="small">Email</label>
-            <input class="input" type="email" name="email" value="<?= e($edit["email"] ?? "") ?>" placeholder="e.g. jane@example.com">
-          </div>
-
-          <div class="col-4">
-            <label class="small">Phone</label>
-            <input class="input" name="phone" value="<?= e($edit["phone"] ?? "") ?>" placeholder="e.g. 0712...">
-          </div>
-          <div class="col-4">
-            <label class="small">Event</label>
-            <select class="select" name="event_id">
-              <option value="">(No specific event)</option>
-              <?php
-                $cur = $edit["event_id"] ?? "";
-                foreach ($events as $ev) {
-                  $sel = ((string)$ev["id"] === (string)$cur) ? "selected" : "";
-                  $label = $ev["title"] . " • " . $ev["event_date"];
-                  echo "<option value='".(int)$ev["id"]."' $sel>".e($label)."</option>";
-                }
-              ?>
-            </select>
-          </div>
-          <div class="col-4">
-            <label class="small">Status</label>
-            <select class="select" name="attendance_status">
-              <?php
-                foreach (["Registered","Confirmed","Attended","Cancelled"] as $o) {
-                  $sel = ($o === ($edit["attendance_status"] ?? "Registered")) ? "selected" : "";
-                  echo "<option $sel>".e($o)."</option>";
-                }
-              ?>
-            </select>
-          </div>
-        </div>
-
-        <div style="display:flex; gap:12px;">
-          <button class="btn" type="submit" style="min-width:180px; padding:12px;"><?= $edit ? "Save Changes" : "Add Attendee" ?></button>
-          <?php if ($edit): ?>
-            <a class="btn btn-ghost" href="attendees.php">Cancel</a>
-          <?php endif; ?>
-        </div>
-      </form>
     </div>
-  </div>
+  <?php endif; ?>
 
   <!-- Bottom: List (Full Width) -->
   <div class="col-12">
@@ -242,7 +244,10 @@ require_once __DIR__ . "/header.php";
           <table class="table">
             <thead>
               <tr>
-                <th>Name</th><th>Phone / Email</th><th>Event</th><th>Status</th><th>Actions</th>
+                <th>Name</th><th>Phone / Email</th><th>Event</th><th>Status</th>
+                <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
+                  <th>Actions</th>
+                <?php endif; ?>
               </tr>
             </thead>
             <tbody>
@@ -266,11 +271,13 @@ require_once __DIR__ . "/header.php";
                     ?>
                     <span style="color:<?= $color ?>; font-weight:800; font-size:0.85rem;">● <?= e($r["attendance_status"]) ?></span>
                   </td>
-                  <td class="actions">
-                    <a class="btn btn-ghost" href="attendees.php?action=edit&id=<?= (int)$r["id"] ?>">Edit</a>
-                    <a class="btn btn-danger" href="attendees.php?action=delete&id=<?= (int)$r["id"] ?>"
-                       onclick="return confirm('Delete this attendee?');">Delete</a>
-                  </td>
+                  <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
+                    <td class="actions">
+                      <a class="btn btn-ghost" href="attendees.php?action=edit&id=<?= (int)$r["id"] ?>">Edit</a>
+                      <a class="btn btn-danger" href="attendees.php?action=delete&id=<?= (int)$r["id"] ?>"
+                         onclick="return confirm('Delete this attendee?');">Delete</a>
+                    </td>
+                  <?php endif; ?>
                 </tr>
               <?php endforeach; ?>
               <?php if (!$rows): ?>

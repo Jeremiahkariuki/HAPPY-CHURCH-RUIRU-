@@ -109,80 +109,82 @@ require_once __DIR__ . "/header.php";
 </div>
 
 <div class="grid">
-  <!-- Top: Form (Full Width) -->
-  <div class="col-12">
-    <div class="card">
-      <div style="font-weight:950; font-size:1.4rem;">
-        <?= $edit ? "Edit Event" : "Create New Event" ?>
-      </div>
-      <div class="small">Keep the church calendar organized and inspiring.</div>
+  <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
+    <!-- Top: Form (Full Width) -->
+    <div class="col-12">
+      <div class="card">
+        <div style="font-weight:950; font-size:1.4rem;">
+          <?= $edit ? "Edit Event" : "Create New Event" ?>
+        </div>
+        <div class="small">Keep the church calendar organized and inspiring.</div>
 
-      <form method="post" style="margin-top:20px; display:grid; gap:20px;">
-        <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
-        <input type="hidden" name="mode" value="<?= $edit ? "update" : "create" ?>">
-        <?php if ($edit): ?><input type="hidden" name="id" value="<?= (int)$edit["id"] ?>"><?php endif; ?>
+        <form method="post" style="margin-top:20px; display:grid; gap:20px;">
+          <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
+          <input type="hidden" name="mode" value="<?= $edit ? "update" : "create" ?>">
+          <?php if ($edit): ?><input type="hidden" name="id" value="<?= (int)$edit["id"] ?>"><?php endif; ?>
 
-        <div class="grid">
-          <div class="col-6">
-            <label class="small">Title</label>
-            <input class="input" name="title" required value="<?= e($edit["title"] ?? "") ?>" placeholder="e.g. Sunday Worship Service">
-          </div>
-          <div class="col-6">
-            <label class="small">Location</label>
-            <input class="input" name="location" required value="<?= e($edit["location"] ?? "") ?>" placeholder="e.g. Main Sanctuary">
-          </div>
+          <div class="grid">
+            <div class="col-6">
+              <label class="small">Title</label>
+              <input class="input" name="title" required value="<?= e($edit["title"] ?? "") ?>" placeholder="e.g. Sunday Worship Service">
+            </div>
+            <div class="col-6">
+              <label class="small">Location</label>
+              <input class="input" name="location" required value="<?= e($edit["location"] ?? "") ?>" placeholder="e.g. Main Sanctuary">
+            </div>
 
-          <div class="col-4">
-            <label class="small">Date</label>
-            <div class="input-wrap">
-              <input id="event_date" class="input" type="date" name="event_date" required value="<?= e($edit["event_date"] ?? "") ?>">
-              <button type="button" class="input-icon" onclick="document.getElementById('event_date').showPicker?.(); document.getElementById('event_date').focus();">
-                <svg viewBox="0 0 24 24" fill="none">
-                  <path d="M7 2v3M17 2v3M3.5 9h17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                  <path d="M6.5 5h11A3.5 3.5 0 0 1 21 8.5v11A3.5 3.5 0 0 1 17.5 23h-11A3.5 3.5 0 0 1 3 19.5v-11A3.5 3.5 0 0 1 6.5 5Z" stroke="currentColor" stroke-width="2"/>
-                </svg>
-              </button>
+            <div class="col-4">
+              <label class="small">Date</label>
+              <div class="input-wrap">
+                <input id="event_date" class="input" type="date" name="event_date" required value="<?= e($edit["event_date"] ?? "") ?>">
+                <button type="button" class="input-icon" onclick="document.getElementById('event_date').showPicker?.(); document.getElementById('event_date').focus();">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M7 2v3M17 2v3M3.5 9h17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M6.5 5h11A3.5 3.5 0 0 1 21 8.5v11A3.5 3.5 0 0 1 17.5 23h-11A3.5 3.5 0 0 1 3 19.5v-11A3.5 3.5 0 0 1 6.5 5Z" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="col-4">
+              <label class="small">Category</label>
+              <input class="input" name="category" value="<?= e($edit["category"] ?? "Church Event") ?>" placeholder="e.g. Worship, Fellowship">
+            </div>
+            <div class="col-4">
+              <label class="small">Status</label>
+              <select class="select" name="status">
+                <?php
+                  foreach (["Scheduled","Ongoing","Completed","Cancelled"] as $o) {
+                    $sel = ($o === ($edit["status"] ?? "Scheduled")) ? "selected" : "";
+                    echo "<option $sel>".e($o)."</option>";
+                  }
+                ?>
+              </select>
+            </div>
+
+            <div class="col-3">
+              <label class="small">Start Time</label>
+              <input class="input" type="time" name="start_time" value="<?= e($edit["start_time"] ?? "") ?>">
+            </div>
+            <div class="col-3">
+              <label class="small">End Time</label>
+              <input class="input" type="time" name="end_time" value="<?= e($edit["end_time"] ?? "") ?>">
+            </div>
+            <div class="col-6">
+              <label class="small">Description</label>
+              <textarea class="textarea" name="description" placeholder="Event details..." style="min-height:46px;"><?= e($edit["description"] ?? "") ?></textarea>
             </div>
           </div>
-          <div class="col-4">
-            <label class="small">Category</label>
-            <input class="input" name="category" value="<?= e($edit["category"] ?? "Church Event") ?>" placeholder="e.g. Worship, Fellowship">
-          </div>
-          <div class="col-4">
-            <label class="small">Status</label>
-            <select class="select" name="status">
-              <?php
-                foreach (["Scheduled","Ongoing","Completed","Cancelled"] as $o) {
-                  $sel = ($o === ($edit["status"] ?? "Scheduled")) ? "selected" : "";
-                  echo "<option $sel>".e($o)."</option>";
-                }
-              ?>
-            </select>
-          </div>
 
-          <div class="col-3">
-            <label class="small">Start Time</label>
-            <input class="input" type="time" name="start_time" value="<?= e($edit["start_time"] ?? "") ?>">
+          <div style="display:flex; gap:12px;">
+            <button class="btn" type="submit" style="min-width:180px; padding:12px;"><?= $edit ? "Save Changes" : "Create Event" ?></button>
+            <?php if ($edit): ?>
+              <a class="btn btn-ghost" href="events.php">Cancel</a>
+            <?php endif; ?>
           </div>
-          <div class="col-3">
-            <label class="small">End Time</label>
-            <input class="input" type="time" name="end_time" value="<?= e($edit["end_time"] ?? "") ?>">
-          </div>
-          <div class="col-6">
-            <label class="small">Description</label>
-            <textarea class="textarea" name="description" placeholder="Event details..." style="min-height:46px;"><?= e($edit["description"] ?? "") ?></textarea>
-          </div>
-        </div>
-
-        <div style="display:flex; gap:12px;">
-          <button class="btn" type="submit" style="min-width:180px; padding:12px;"><?= $edit ? "Save Changes" : "Create Event" ?></button>
-          <?php if ($edit): ?>
-            <a class="btn btn-ghost" href="events.php">Cancel</a>
-          <?php endif; ?>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
-  </div>
+  <?php endif; ?>
 
   <!-- Bottom: List (Full Width) -->
   <div class="col-12">
@@ -219,7 +221,10 @@ require_once __DIR__ . "/header.php";
           <table class="table">
             <thead>
               <tr>
-                <th>Date</th><th>Title</th><th>Location</th><th>Category</th><th>Status</th><th>Actions</th>
+                <th>Date</th><th>Title</th><th>Location</th><th>Category</th><th>Status</th>
+                <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
+                  <th>Actions</th>
+                <?php endif; ?>
               </tr>
             </thead>
             <tbody>
@@ -235,11 +240,13 @@ require_once __DIR__ . "/header.php";
                      ?>
                      <span style="color:<?= $color ?>; font-weight:800; font-size:0.85rem;">● <?= e($r["status"]) ?></span>
                   </td>
-                  <td class="actions">
-                    <a class="btn btn-ghost" href="events.php?action=edit&id=<?= (int)$r["id"] ?>">Edit</a>
-                    <a class="btn btn-danger" href="events.php?action=delete&id=<?= (int)$r["id"] ?>"
-                       onclick="return confirm('Delete this event?');">Delete</a>
-                  </td>
+                  <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
+                    <td class="actions">
+                      <a class="btn btn-ghost" href="events.php?action=edit&id=<?= (int)$r["id"] ?>">Edit</a>
+                      <a class="btn btn-danger" href="events.php?action=delete&id=<?= (int)$r["id"] ?>"
+                         onclick="return confirm('Delete this event?');">Delete</a>
+                    </td>
+                  <?php endif; ?>
                 </tr>
               <?php endforeach; ?>
               <?php if (!$rows): ?>

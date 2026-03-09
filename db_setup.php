@@ -11,6 +11,7 @@ try {
     `username` varchar(50) NOT NULL,
     `password_hash` varchar(255) NOT NULL,
     `role` varchar(20) NOT NULL DEFAULT 'user',
+    `status` varchar(20) NOT NULL DEFAULT 'Pending',
     `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
     PRIMARY KEY (`id`),
     UNIQUE KEY `username` (`username`)
@@ -64,12 +65,29 @@ try {
     PRIMARY KEY (`id`)
   );
 
-  INSERT IGNORE INTO `users` (`username`, `password_hash`, `role`) VALUES ('admin', '$2y$10$8.X1oWf8GjFwUo.XwA5.XeYg5yJ.1e1s.R5.O.G1T.7.4.q.3', 'admin');
+  INSERT IGNORE INTO `users` (`username`, `password_hash`, `role`, `status`) VALUES ('admin', '$2y$10$8.X1oWf8GjFwUo.XwA5.XeYg5yJ.1e1s.R5.O.G1T.7.4.q.3', 'admin', 'Approved');
   ";
   
   $pdo->exec($sql);
-  echo 'Database setup successful!';
+
+  // Migration: Add status if not exists
+  echo "Checking for status column...<br>";
+  try {
+     $pdo->exec("ALTER TABLE `users` ADD COLUMN `status` varchar(20) NOT NULL DEFAULT 'Pending' AFTER `role` ");
+     echo "Added 'status' column successfully.<br>";
+  } catch (Exception $e) {
+     echo "Status column already exists or could not be added: " . $e->getMessage() . "<br>";
+  }
+
+  try {
+     $pdo->exec("UPDATE `users` SET `status` = 'Approved' WHERE `role` = 'admin' ");
+     echo "Updated admin status to Approved.<br>";
+  } catch (Exception $e) {
+     echo "Could not update admin status.<br>";
+  }
+
+  echo "<strong>Database setup and migrations successful!</strong>";
 } catch (PDOException $e) {
-  echo 'Error: ' . $e->getMessage();
+  echo '<strong style="color:red;">Error: ' . $e->getMessage() . '</strong>';
 }
 ?>
