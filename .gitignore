@@ -1,0 +1,5 @@
+db.php
+config.php
+.system_generated/
+*.log
+.DS_Store
