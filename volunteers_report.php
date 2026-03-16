@@ -25,7 +25,12 @@ if ($availF !== "") { $where[] = "availability = ?"; $params[] = $availF; }
 
 $whereSql = $where ? ("WHERE " . implode(" AND ", $where)) : "";
 
-$stmt = $pdo->prepare("SELECT full_name,phone,email,ministry,availability FROM volunteers $whereSql ORDER BY id DESC");
+$stmt = $pdo->prepare("
+  SELECT v.full_name, v.phone, v.email, v.ministry, v.availability, e.title AS event_title, e.event_date
+  FROM volunteers v
+  LEFT JOIN events e ON e.id = v.event_id
+  $whereSql ORDER BY v.id DESC
+");
 $stmt->execute($params);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -60,8 +65,8 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <body>
   <div class="report-container">
     <div class="no-print" style="display:flex; gap:12px; margin-bottom:30px; justify-content: space-between; align-items: center;">
-      <a class="btn btn-ghost" href="volunteers.php" style="display:flex; align-items:center; gap:8px;">
-        ← Back to Management
+      <a class="btn btn-ghost" href="dashboard.php?tab=volunteers" style="display:flex; align-items:center; gap:8px;">
+        ← Back to Dashboard
       </a>
       <button class="btn" onclick="window.print()" style="padding: 12px 24px; background: linear-gradient(135deg, var(--brand), var(--brand2)); color: #07101f; font-weight: 950; border: none;">
         🖨️ Print Report
@@ -90,17 +95,18 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <table>
       <thead>
         <tr>
-          <th>Name</th><th>Ministry</th><th>Contacts</th><th>Availability</th>
+          <th>Name</th><th>Ministry</th><th>Event</th><th>Contacts</th><th>Availability</th>
         </tr>
       </thead>
       <tbody>
         <?php foreach ($rows as $r): ?>
           <tr>
             <td><?= e($r["full_name"]) ?></td>
-            <td><?= e($r["ministry"]) ?></td>
+            <td><span class="pill" style="font-size:0.7rem; margin:0; padding:4px 8px;"><?= e($r["ministry"]) ?></span></td>
+            <td><strong style="color:var(--brand);"><?= e($r["event_title"] ?: "General") ?></strong> <span style="font-size:0.75rem; opacity:0.8;"><?= $r["event_date"] ? "(".e(format_date($r["event_date"])).")" : "" ?></span></td>
             <td class="small">
               <?= e($r["phone"] ?: "-") ?><br>
-              <span style="opacity:0.8;"><?= e($r["email"] ?: "-") ?></span>
+              <span style="opacity:0.8; font-size:0.8rem;"><?= e($r["email"] ?: "-") ?></span>
             </td>
             <td>
               <span style="color:var(--brand2); font-weight:800; font-size:0.85rem;">📂 <?= e($r["availability"]) ?></span>

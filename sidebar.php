@@ -4,9 +4,9 @@ $active = basename($_SERVER["PHP_SELF"]);
 ?>
 <aside class="sidebar" id="sidebar">
   <div class="brand">
-    <div class="brand-mark">✝</div>
+    <div class="brand-mark" style="background: linear-gradient(135deg, #7c5cff, #2ee9a6); color:#07101f; padding: 10px; border-radius: 12px; font-weight: 950;">+</div>
     <div class="brand-text">
-      <div class="brand-title">Church Admin</div>
+      <div class="brand-title"><?= e($appName) ?></div>
       <div class="brand-sub">Events & Community</div>
     </div>
   </div>
@@ -15,6 +15,7 @@ $active = basename($_SERVER["PHP_SELF"]);
     <a class="nav-item <?= $active==='dashboard.php'?'active':'' ?>" href="dashboard.php">Dashboard</a>
     <a class="nav-item <?= $active==='events.php'?'active':'' ?>" href="events.php">Events</a>
     <a class="nav-item <?= $active==='volunteers.php'?'active':'' ?>" href="volunteers.php">Volunteers</a>
+    <a class="nav-item <?= $active==='gallery.php'?'active':'' ?>" href="gallery.php">Gallery</a>
     <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
       <a class="nav-item <?= $active==='attendees.php'?'active':'' ?>" href="attendees.php">Attendees</a>
     <?php endif; ?>
@@ -27,7 +28,7 @@ $active = basename($_SERVER["PHP_SELF"]);
 
   <div class="sidebar-footer">
     <div class="small">Signed in as</div>
-    <div class="pill"><?= e($user["username"] ?? "admin") ?></div>
+    <div class="pill"><?= e($_SESSION["user"]["username"] ?? "admin") ?></div>
     <a class="btn btn-ghost" href="logout.php">Logout</a>
   </div>
 </aside>

@@ -111,11 +111,11 @@ $totalPages = max(1, (int)ceil($total / $perPage));
 
 // list rows
 $stmt = $pdo->prepare("
-  SELECT a.*, e.title AS event_title
+  SELECT a.*, e.title AS event_title, e.event_date
   FROM attendees a
   LEFT JOIN events e ON e.id = a.event_id
   $whereSql
-  ORDER BY a.id DESC
+  ORDER BY e.event_date DESC, a.id DESC
   LIMIT $perPage OFFSET $offset
 ");
 $stmt->execute($params);
@@ -264,7 +264,7 @@ require_once __DIR__ . "/header.php";
                     <?php endif; ?>
                     <div style="margin-top:4px; opacity:0.8;"><?= e($r["email"] ?: "-") ?></div>
                   </td>
-                  <td><?= e($r["event_title"] ?? "-") ?></td>
+                  <td><?= e($r["event_title"] ?? "-") ?> <?= (isset($r["event_date"]) && $r["event_date"]) ? "• ".e(format_date($r["event_date"])) : "" ?></td>
                   <td>
                     <?php
                       $color = ["Registered"=>"var(--brand2)", "Confirmed"=>"var(--brand)", "Attended"=>"var(--brand2)", "Cancelled"=>"var(--danger)"][$r["attendance_status"]] ?? "var(--text)";

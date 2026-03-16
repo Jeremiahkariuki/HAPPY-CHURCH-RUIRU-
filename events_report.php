@@ -63,8 +63,8 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <body>
   <div class="report-container">
     <div class="no-print" style="display:flex; gap:12px; margin-bottom:30px; justify-content: space-between; align-items: center;">
-      <a class="btn btn-ghost" href="events.php" style="display:flex; align-items:center; gap:8px;">
-        ← Back to Management
+      <a class="btn btn-ghost" href="dashboard.php?tab=events" style="display:flex; align-items:center; gap:8px;">
+        ← Back to Dashboard
       </a>
       <button class="btn" onclick="window.print()" style="padding: 12px 24px; background: linear-gradient(135deg, var(--brand), var(--brand2)); color: #07101f; font-weight: 950; border: none;">
         🖨️ Print Report
