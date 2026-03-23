@@ -37,7 +37,7 @@ if (isset($_GET["action"]) && isset($_GET["id"])) {
     }
 }
 
-$users_list = $pdo->query("SELECT id, username, role, status, created_at FROM users ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+$users_list = $pdo->query("SELECT id, username, email, role, status, created_at FROM users ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
 
 require_once __DIR__ . "/header.php";
 ?>
@@ -57,6 +57,7 @@ require_once __DIR__ . "/header.php";
             <thead>
                 <tr style="text-align:left; border-bottom: 1px solid rgba(255,255,255,0.1);">
                     <th style="padding:12px;">Username</th>
+                    <th style="padding:12px;">Email</th>
                     <th style="padding:12px;">Role</th>
                     <th style="padding:12px;">Status</th>
                     <th style="padding:12px;">Requested At</th>
@@ -70,6 +71,7 @@ require_once __DIR__ . "/header.php";
                 <?php foreach ($users_list as $u): ?>
                     <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                         <td style="padding:12px; font-weight:800;"><?= e($u["username"]) ?></td>
+                        <td style="padding:12px; font-size:0.85rem; opacity:0.8;"><?= e($u["email"] ?? "-") ?></td>
                         <td style="padding:12px;"><span class="tag"><?= e($u["role"]) ?></span></td>
                         <td style="padding:12px;">
                             <?php 

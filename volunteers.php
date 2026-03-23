@@ -11,6 +11,31 @@ require_once __DIR__ . "/helpers.php";
 $action = $_GET["action"] ?? "";
 $id = isset($_GET["id"]) ? (int)$_GET["id"] : 0;
 
+// Self-healing: Ensure event_id column exists in volunteers table
+try {
+    $pdo->query("SELECT event_id FROM volunteers LIMIT 1");
+} catch (Exception $e) {
+    try {
+        $pdo->exec("ALTER TABLE `volunteers` ADD COLUMN `event_id` int(11) DEFAULT NULL AFTER `email` ");
+        $pdo->exec("ALTER TABLE `volunteers` ADD CONSTRAINT `fk_vol_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE ");
+    } catch (Exception $e2) {
+        // Silently fail if events table doesn't exist yet, but it should.
+    }
+}
+
+/* -----------------------
+   CLEANUP PAST DATA
+------------------------ */
+if ($action === "cleanup" && in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])) {
+    $stmt = $pdo->prepare("DELETE FROM events WHERE event_date < CURRENT_DATE()");
+    $stmt->execute();
+    $count = $stmt->rowCount();
+    flash_set("Cleanup complete! Removed $count past events and their associated records.");
+    redirect("volunteers.php");
+}
+
+$events = $pdo->query("SELECT id, title, event_date FROM events ORDER BY event_date DESC")->fetchAll();
+
 /* -----------------------
    CREATE / UPDATE
 ------------------------ */
@@ -22,6 +47,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   $phone = trim((string)($_POST["phone"] ?? ""));
   $email = trim((string)($_POST["email"] ?? ""));
   $ministry = trim((string)($_POST["ministry"] ?? ""));
+  $event_id = ($_POST["event_id"] ?? "") !== "" ? (int)$_POST["event_id"] : null;
   $availability = (string)($_POST["availability"] ?? "Both");
   $notes = trim((string)($_POST["notes"] ?? ""));
 
@@ -32,12 +58,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
   if ($mode === "update") {
     $vid = (int)($_POST["id"] ?? 0);
-    $stmt = $pdo->prepare("UPDATE volunteers SET full_name=?, phone=?, email=?, ministry=?, availability=?, notes=? WHERE id=?");
-    $stmt->execute([$full_name, $phone ?: null, $email ?: null, $ministry, $availability, $notes, $vid]);
+    $stmt = $pdo->prepare("UPDATE volunteers SET full_name=?, phone=?, email=?, event_id=?, ministry=?, availability=?, notes=? WHERE id=?");
+    $stmt->execute([$full_name, $phone ?: null, $email ?: null, $event_id, $ministry, $availability, $notes, $vid]);
     flash_set("Volunteer updated.");
   } else {
-    $stmt = $pdo->prepare("INSERT INTO volunteers (full_name, phone, email, ministry, availability, notes) VALUES (?,?,?,?,?,?)");
-    $stmt->execute([$full_name, $phone ?: null, $email ?: null, $ministry, $availability, $notes]);
+    $stmt = $pdo->prepare("INSERT INTO volunteers (full_name, phone, email, event_id, ministry, availability, notes) VALUES (?,?,?,?,?,?,?)");
+    $stmt->execute([$full_name, $phone ?: null, $email ?: null, $event_id, $ministry, $availability, $notes]);
     flash_set("Volunteer added.");
   }
 
@@ -99,7 +125,12 @@ $total = (int)$stmt->fetchColumn();
 $totalPages = max(1, (int)ceil($total / $perPage));
 
 // list rows
-$stmt = $pdo->prepare("SELECT * FROM volunteers $whereSql ORDER BY id DESC LIMIT $perPage OFFSET $offset");
+$stmt = $pdo->prepare("
+  SELECT v.*, e.title AS event_title, e.event_date
+  FROM volunteers v
+  LEFT JOIN events e ON e.id = v.event_id
+  $whereSql ORDER BY e.event_date DESC, v.id DESC LIMIT $perPage OFFSET $offset
+");
 $stmt->execute($params);
 $rows = $stmt->fetchAll();
 
@@ -121,7 +152,20 @@ require_once __DIR__ . "/header.php";
         <div style="font-weight:950; font-size:1.4rem;">
           <?= $edit ? "Edit Volunteer" : "Add Volunteer" ?>
         </div>
-        <div class="small">Manage serving teams with order and clarity.</div>
+        <div class="small" style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px;">
+          <span>Manage serving teams with order and clarity.</span>
+          <?php if (!$edit && in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
+            <?php
+              $pastCount = $pdo->query("SELECT COUNT(*) FROM events WHERE event_date < CURRENT_DATE()")->fetchColumn();
+            ?>
+            <?php if ($pastCount > 0): ?>
+              <a href="volunteers.php?action=cleanup" class="btn btn-danger" style="font-size:0.7rem; padding:6px 12px;" 
+                 onclick="return confirm('Note: This will delete ALL past events (<?= (int)$pastCount ?>) and linked participants. Proceed?');">
+                🧹 Cleanup <?= (int)$pastCount ?> Past Events
+              </a>
+            <?php endif; ?>
+          <?php endif; ?>
+        </div>
 
         <form method="post" style="margin-top:20px; display:grid; gap:20px;">
           <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
@@ -153,6 +197,19 @@ require_once __DIR__ . "/header.php";
                   foreach (["Weekdays","Weekends","Both"] as $o) {
                     $sel = ($o === ($edit["availability"] ?? "Both")) ? "selected" : "";
                     echo "<option $sel>".e($o)."</option>";
+                  }
+                ?>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="small">Assign to Event</label>
+              <select class="select" name="event_id">
+                <option value="">(General Volunteer - No specific event)</option>
+                <?php
+                  $curEv = $edit["event_id"] ?? "";
+                  foreach ($events as $ev) {
+                    $sel = ((string)$ev["id"] === (string)$curEv) ? "selected" : "";
+                    echo "<option value='".(int)$ev["id"]."' $sel>".e($ev["title"]." • ".$ev["event_date"])."</option>";
                   }
                 ?>
               </select>
@@ -210,7 +267,7 @@ require_once __DIR__ . "/header.php";
           <table class="table">
             <thead>
               <tr>
-                <th>Name</th><th>Ministry</th><th>Phone / Email</th><th>Availability</th>
+                <th>Name</th><th>Ministry</th><th>Phone / Email</th><th>Event</th><th>Availability</th>
                 <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
                   <th>Actions</th>
                 <?php endif; ?>
@@ -230,6 +287,9 @@ require_once __DIR__ . "/header.php";
                       -
                     <?php endif; ?>
                     <div style="margin-top:4px; opacity:0.8;"><?= e($r["email"] ?: "-") ?></div>
+                  </td>
+                  <td class="small">
+                    <span style="font-weight:700; color:var(--brand);"><?= e($r["event_title"] ?: "General") ?> <?= $r["event_date"] ? "• ".e(format_date($r["event_date"])) : "" ?></span>
                   </td>
                   <td>
                     <span style="font-weight:800; font-size:0.85rem; color:var(--brand2);">📂 <?= e($r["availability"]) ?></span>

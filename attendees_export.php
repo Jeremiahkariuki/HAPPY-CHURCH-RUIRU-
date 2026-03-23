@@ -42,7 +42,7 @@ header("Content-Disposition: attachment; filename=\"$filename\"");
 echo "\xEF\xBB\xBF"; // BOM for Excel
 
 $out = fopen("php://output", "w");
-fputcsv($out, array_keys($rows[0] ?? ["full_name","phone","email","event","attendance_status","created_at"]));
+fputcsv($out, ["Full Name","Phone","Email","Event","Attendance Status","Registered At"]);
 foreach ($rows as $r) fputcsv($out, $r);
 fclose($out);
 exit;
