@@ -37,7 +37,7 @@ header("Content-Disposition: attachment; filename=\"$filename\"");
 echo "\xEF\xBB\xBF";
 
 $out = fopen("php://output", "w");
-fputcsv($out, array_keys($rows[0] ?? ["title","event_date","start_time","end_time","location","category","status","description","created_at"]));
+fputcsv($out, ["Title","Event Date","Start Time","End Time","Location","Category","Status","Description","Created At"]);
 
 foreach ($rows as $r) {
   fputcsv($out, $r);

@@ -22,7 +22,12 @@ if ($availF !== "") { $where[] = "availability = ?"; $params[] = $availF; }
 
 $whereSql = $where ? ("WHERE " . implode(" AND ", $where)) : "";
 
-$stmt = $pdo->prepare("SELECT full_name,phone,email,ministry,availability,notes,created_at FROM volunteers $whereSql ORDER BY id DESC");
+$stmt = $pdo->prepare("
+  SELECT v.full_name, v.phone, v.email, v.ministry, v.availability, e.title AS event_title, e.event_date, v.notes, v.created_at 
+  FROM volunteers v
+  LEFT JOIN events e ON e.id = v.event_id
+  $whereSql ORDER BY v.id DESC
+");
 $stmt->execute($params);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -32,7 +37,7 @@ header("Content-Disposition: attachment; filename=\"$filename\"");
 echo "\xEF\xBB\xBF"; // BOM for Excel
 
 $out = fopen("php://output", "w");
-fputcsv($out, array_keys($rows[0] ?? ["full_name","phone","email","ministry","availability","notes","created_at"]));
+fputcsv($out, ["Full Name","Phone","Email","Ministry","Availability","Event Title","Event Date","Notes","Created At"]);
 foreach ($rows as $r) fputcsv($out, $r);
 fclose($out);
 exit;
