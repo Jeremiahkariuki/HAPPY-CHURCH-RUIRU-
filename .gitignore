@@ -1,4 +1,4 @@
-db.php
+# db.php (Previously ignored)
 config.php
 .system_generated/
 *.log
