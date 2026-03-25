@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: happy-church-ruiru
+    env: docker
+    plan: free
+    branch: feature/user-management
+    healthCheckPath: /
+    envVars:
+      - key: DB_HOST
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM_NAME
+        value: "Happy Church Ruiru"

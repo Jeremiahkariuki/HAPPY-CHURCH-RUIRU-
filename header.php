@@ -6,7 +6,7 @@ require_once __DIR__ . "/helpers.php";
 $appName = "HAPPY CHURCH RUIRU";
 $current_page = basename($_SERVER["PHP_SELF"]);
 $tab = (string)($_GET["tab"] ?? "events");
-$user = $_SESSION["user"]["username"] ?? "admin";
+$flash = $flash ?? flash_get();
 
 function isActiveTab(string $t, string $currentTab, string $page): bool {
   return $page === "dashboard.php" && $currentTab === $t;
@@ -18,7 +18,7 @@ function isActiveTab(string $t, string $currentTab, string $page): bool {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title><?= e($appName) ?></title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=<?= filemtime(__DIR__ . '/style.css') ?>" />
   <style>
     /* Premium drawer */
     .drawer-overlay{
@@ -38,9 +38,9 @@ function isActiveTab(string $t, string $currentTab, string $page): bool {
       transform: translateX(-110%);
       transition:.18s ease;
       z-index:60;
-      padding:18px;
+      padding:12px 18px;
       display:flex; flex-direction:column;
-      gap:14px;
+      gap:8px;
     }
     .drawer.open{transform: translateX(0);}
 
@@ -67,12 +67,12 @@ function isActiveTab(string $t, string $currentTab, string $page): bool {
       color:var(--text);
       font-size:18px;
     }
-    .drawer-nav{display:flex;flex-direction:column;gap:10px;}
-    .drawer-section{margin-top:6px; font-size:.78rem; color:var(--muted); letter-spacing:.12em;}
+    .drawer-nav{display:flex;flex-direction:column;gap:5px;}
+    .drawer-section{margin-top:2px; font-size:.78rem; color:var(--muted); letter-spacing:.12em;}
 
     .drawer-item{
       display:flex; align-items:center; justify-content:space-between; gap:10px;
-      padding:12px 12px;
+      padding:10px 12px;
       border-radius: 14px;
       background: rgba(255,255,255,.04);
       border: var(--border);
@@ -97,7 +97,7 @@ function isActiveTab(string $t, string $currentTab, string $page): bool {
     }
     .drawer-foot{
       margin-top:auto;
-      padding:14px;
+      padding:12px;
       border-radius: var(--radius);
       background: rgba(255,255,255,.04);
       border: var(--border);
@@ -134,7 +134,7 @@ function isActiveTab(string $t, string $currentTab, string $page): bool {
 <aside class="drawer" id="drawer" aria-hidden="true">
   <div class="drawer-head">
     <div class="drawer-brand">
-      <div class="drawer-logo">✝</div>
+      <div class="drawer-logo" style="background: linear-gradient(135deg, #7c5cff, #2ee9a6); color:#07101f;">+</div>
       <div>
         <div style="font-weight:950;"><?= e($appName) ?></div>
         <div class="small">Events • Volunteers • Attendance</div>
@@ -156,6 +156,11 @@ function isActiveTab(string $t, string $currentTab, string $page): bool {
 
     <a class="drawer-item <?= $current_page==="volunteers.php" ? "active" : "" ?>" href="volunteers.php">
       <span class="drawer-left">🤝 <span>Volunteers</span></span>
+      <span></span>
+    </a>
+
+    <a class="drawer-item <?= $current_page==="gallery.php" ? "active" : "" ?>" href="gallery.php">
+      <span class="drawer-left">🖼️ <span>Gallery</span></span>
       <span></span>
     </a>
 
@@ -189,11 +194,11 @@ function isActiveTab(string $t, string $currentTab, string $page): bool {
   <div class="drawer-foot" style="padding:16px; border-top:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.02);">
     <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
       <div style="width:44px; height:44px; border-radius:14px; background:linear-gradient(135deg, var(--brand), var(--brand2)); display:grid; place-items:center; font-weight:950; color:#07101f; font-size:1.2rem; box-shadow:0 8px 20px rgba(124,92,255,.3);">
-        <?= strtoupper(substr(e((string)$user), 0, 1)) ?>
+        <?= strtoupper(substr(e($_SESSION["user"]["username"] ?? "Guest"), 0, 1)) ?>
       </div>
       <div>
         <div style="font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; font-weight:800;">Signed in as</div>
-        <div style="font-weight:950; font-size:1rem; color:var(--text); letter-spacing:-0.2px;"><?= e((string)$user) ?></div>
+        <div style="font-weight:950; font-size:1rem; color:var(--text); letter-spacing:-0.2px;"><?= e($_SESSION["user"]["username"] ?? "Guest") ?></div>
       </div>
     </div>
     <a class="btn btn-ghost" href="logout.php" style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px; padding:12px; background:rgba(255,77,109,.1); border-color:rgba(255,77,109,.2); color:#ff4d6d; border-radius:14px; font-weight:850; font-size:0.9rem;">
@@ -214,11 +219,44 @@ function isActiveTab(string $t, string $currentTab, string $page): bool {
     </button>
     <div>
       <div class="topbar-title"><?= e($appName) ?></div>
-      <div class="topbar-sub">Admin Dashboard</div>
+      <div class="topbar-sub">
+        <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
+          Admin Dashboard
+        <?php else: ?>
+          Member Dashboard
+        <?php endif; ?>
+      </div>
     </div>
   </div>
   <div class="tag">Secure</div>
 </header>
 
 <!-- ✅ IMPORTANT: Keep MAIN OPEN (do NOT close here) -->
-<main class="main"></main>
+<main class="main">
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const menuBtn = document.getElementById('menuBtn') || document.getElementById('toggleBtn');
+  const drawer = document.getElementById('drawer') || document.getElementById('sidebar');
+  const overlay = document.getElementById('drawerOverlay');
+  const closeBtn = document.getElementById('drawerClose');
+
+  if (!menuBtn || !drawer) return;
+
+  const openDrawer = () => {
+    drawer.classList.add('open');
+    overlay?.classList.add('open');
+    drawer.setAttribute('aria-hidden', 'false');
+  };
+
+  const closeDrawer = () => {
+    drawer.classList.remove('open');
+    overlay?.classList.remove('open');
+    drawer.setAttribute('aria-hidden', 'true');
+  };
+
+  menuBtn.addEventListener('click', openDrawer);
+  closeBtn?.addEventListener('click', closeDrawer);
+  overlay?.addEventListener('click', closeDrawer);
+});
+</script>

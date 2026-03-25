@@ -8,11 +8,12 @@ $success = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $username = trim((string)($_POST["username"] ?? ""));
+    $email    = trim((string)($_POST["email"] ?? ""));
     $password = (string)($_POST["password"] ?? "");
     $confirm  = (string)($_POST["confirm_password"] ?? "");
     $role     = trim((string)($_POST["role"] ?? "Member"));
 
-    if ($username === "" || $password === "") {
+    if ($username === "" || $email === "" || $password === "") {
         $error = "Please fill all fields.";
     } elseif ($password !== $confirm) {
         $error = "Passwords do not match.";
@@ -25,17 +26,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             if ($stmt->fetch()) {
                 $error = "Username already taken.";
             } else {
+                // Self-healing: Ensure email column exists
+                try {
+                    $pdo->query("SELECT email FROM users LIMIT 1");
+                } catch (Exception $e) {
+                    $pdo->exec("ALTER TABLE users ADD COLUMN email varchar(100) DEFAULT NULL AFTER username");
+                    $pdo->exec("ALTER TABLE users ADD UNIQUE (email)");
+                }
+
                 $hash = password_hash($password, PASSWORD_DEFAULT);
                 try {
-                    $stmt = $pdo->prepare("INSERT INTO users (username, password_hash, role, status) VALUES (?, ?, ?, 'Pending')");
-                    $stmt->execute([$username, $hash, $role]);
+                    $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, role, status) VALUES (?, ?, ?, ?, 'Pending')");
+                    $stmt->execute([$username, $email, $hash, $role]);
                 } catch (PDOException $e) {
                     // If error is about missing status column, try to add it
                     if (strpos($e->getMessage(), "Unknown column 'status'") !== false) {
                         $pdo->exec("ALTER TABLE users ADD COLUMN status varchar(20) NOT NULL DEFAULT 'Pending' AFTER role");
                         // Try insert again
-                        $stmt = $pdo->prepare("INSERT INTO users (username, password_hash, role, status) VALUES (?, ?, ?, 'Pending')");
-                        $stmt->execute([$username, $hash, $role]);
+                        $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, role, status) VALUES (?, ?, ?, ?, 'Pending')");
+                        $stmt->execute([$username, $email, $hash, $role]);
                     } else {
                         throw $e;
                     }
@@ -80,6 +89,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <div>
 <label class="small">Username</label>
 <input class="input" name="username" placeholder="Choose a username" required value="<?= e($username ?? "") ?>">
+</div>
+<div>
+<label class="small">Email Address (Gmail preferred)</label>
+<input class="input" type="email" name="email" placeholder="email@gmail.com" required value="<?= e($email ?? "") ?>">
 </div>
 <div>
 <label class="small">Desired Role</label>

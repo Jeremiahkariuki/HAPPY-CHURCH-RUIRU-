@@ -13,3 +13,8 @@ function require_login(): void {
 function current_user(): ?array {
   return $_SESSION["user"] ?? null;
 }
+
+// Global authentication variables
+$sessionUser = $_SESSION["user"] ?? [];
+$user = $sessionUser["username"] ?? "Guest";
+$userRole = $sessionUser["role"] ?? "guest";
