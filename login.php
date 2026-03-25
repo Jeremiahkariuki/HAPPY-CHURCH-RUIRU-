@@ -53,8 +53,7 @@ if (!$db_error) {
     }
     ensure_admin($pdo);
 } else {
-    // If DB fails, it means MySQL is likely OFF
-    $error = "Database connection failed. <strong>Please start MySQL in your XAMPP Control Panel</strong> and refresh this page.";
+    $error = "Database connection failed. <strong>Local users:</strong> start MySQL in XAMPP. <strong>Cloud users:</strong> verify environment variables.";
 }
 
 /* Login process */

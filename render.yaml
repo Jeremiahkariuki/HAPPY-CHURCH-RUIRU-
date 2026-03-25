@@ -3,7 +3,7 @@ services:
     name: happy-church-ruiru
     env: docker
     plan: free
-    branch: feature/user-management
+    branch: main
     healthCheckPath: /
     envVars:
       - key: DB_HOST

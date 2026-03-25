@@ -6,8 +6,11 @@ $pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : "";
 try {
   $pdo = new PDO("mysql:host=$host", $user, $pass);
   $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-  $pdo->exec('CREATE DATABASE IF NOT EXISTS `church_events_system`');
-  $pdo->exec('USE `church_events_system`');
+  
+  $db_name = getenv('DB_NAME') ?: "church_events_system";
+  $pdo->exec("CREATE DATABASE IF NOT EXISTS `$db_name` ");
+  $pdo->exec("USE `$db_name` ");
+
   
   $sql = "
   CREATE TABLE IF NOT EXISTS `users` (
