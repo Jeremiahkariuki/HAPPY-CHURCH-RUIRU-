@@ -29,7 +29,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             if ($stmt->fetch()) {
                 $error = "Username already taken.";
             } else {
-                // Self-healing: Ensure email column exists
+                $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+                $stmt->execute([$email]);
+                if ($stmt->fetch()) {
+                    $error = "This email address is already registered.";
+                } else {
+                    // Self-healing: Ensure email column exists
                 try {
                     $pdo->query("SELECT email FROM users LIMIT 1");
                 } catch (Exception $e) {
