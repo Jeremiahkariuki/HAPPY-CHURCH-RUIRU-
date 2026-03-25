@@ -99,9 +99,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $error = "Invalid username or password.";
             }
         } catch (Exception $e) {
-            $error = "An error occurred during login. Please try again.";
+            $error = "An error occurred during login: " . e($e->getMessage());
         }
+    } else {
+        $error = "Login unavailable: Database is not connected.";
     }
+
 }
 ?>
 

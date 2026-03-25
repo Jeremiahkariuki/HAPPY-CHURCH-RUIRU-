@@ -4,6 +4,9 @@ require_once __DIR__ . "/db.php";
 require_once __DIR__ . "/helpers.php";
 
 $error = "";
+if (!isset($pdo) || $pdo === null) {
+    $error = "Database connection unavailable. Please ensure MySQL is running.";
+}
 $success = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
