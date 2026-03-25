@@ -229,7 +229,7 @@ require_once __DIR__ . "/header.php";
   <div class="miniGrid">
     <div class="mini"><div class="k">📅 Upcoming Events</div><div class="s">From today onwards</div><div class="t"><?= $upcomingCount ?></div></div>
     <div class="mini"><div class="k">🗓️ Today's Events</div><div class="s"><?= e2($today) ?></div><div class="t"><?= $todayCount ?></div></div>
-    <div class="mini"><div class="k">✅ Attendance Rate</div><div class="s">Attended / Total</div><div class="t"><?= $attRate ?>%</div></div>
+    <div class="mini"><div class="k">✅ Attendance Rate</div><div class="s"><?= $totalRegisteredForCompleted > 0 ? "Based on $completedCount events" : "No events completed yet" ?></div><div class="t"><?= $totalRegisteredForCompleted > 0 ? $attRate . "%" : "---" ?></div></div>
     <div class="mini"><div class="k">🏁 Completed Events</div><div class="s">Finished programs</div><div class="t"><?= $completedCount ?></div></div>
   </div>
 </div>
@@ -274,7 +274,15 @@ require_once __DIR__ . "/header.php";
         </div>
         <div class="tag">Analytics</div>
       </div>
-      <div class="canvasWrap"><canvas id="eventsLine"></canvas></div>
+      <div class="canvasWrap">
+        <?php if (empty($monthLabels) && empty($dailyLabels30)): ?>
+          <div style="height:100%; display:grid; place-items:center; opacity:0.5; text-align:center;">
+             <div><div style="font-size:2rem; margin-bottom:10px;">📉</div><div class="small">No event data to plot yet.</div></div>
+          </div>
+        <?php else: ?>
+          <canvas id="eventsLine"></canvas>
+        <?php endif; ?>
+      </div>
     </div>
   </div>
   <div class="col-4">
@@ -283,7 +291,15 @@ require_once __DIR__ . "/header.php";
         <div><div class="chartTitle">Attendance Status</div><div class="chartSub">Distribution overview</div></div>
         <div class="tag">Live</div>
       </div>
-      <div class="canvasWrap"><canvas id="attendancePie"></canvas></div>
+      <div class="canvasWrap">
+        <?php if (empty($attLabels)): ?>
+          <div style="height:100%; display:grid; place-items:center; opacity:0.5; text-align:center;">
+             <div><div style="font-size:2rem; margin-bottom:10px;">📊</div><div class="small">Waiting for participants.</div></div>
+          </div>
+        <?php else: ?>
+          <canvas id="attendancePie"></canvas>
+        <?php endif; ?>
+      </div>
     </div>
   </div>
 
