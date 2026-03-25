@@ -117,6 +117,7 @@ require_once __DIR__ . "/header.php";
     width: 100%;
     display: block;
     transition: transform 0.5s ease;
+    background: rgba(255,255,255,.05);
   }
   .gallery-item:hover img {
     transform: scale(1.05);
