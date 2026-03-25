@@ -15,6 +15,28 @@ $userRole = $_SESSION["user"]["role"] ?? "";
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
   csrf_verify();
 
+  /* -----------------------
+     MEMBER APPLY LOGIC
+  ------------------------ */
+  if ($action === "apply" && $id > 0) {
+      $stmtUser = $pdo->prepare("SELECT email FROM users WHERE id=?");
+      $stmtUser->execute([(int)$_SESSION["user"]["id"]]);
+      $uEmail = $stmtUser->fetchColumn();
+      $uName = $_SESSION["user"]["username"];
+      
+      $stmtCheck = $pdo->prepare("SELECT id FROM attendees WHERE event_id=? AND (full_name=? OR email=?)");
+      $stmtCheck->execute([$id, $uName, $uEmail ?: 'N/A']);
+      
+      if ($stmtCheck->rowCount() > 0) {
+          flash_set("You are already registered for this event.", "error");
+      } else {
+          $stmtIns = $pdo->prepare("INSERT INTO attendees (full_name, email, event_id, attendance_status) VALUES (?, ?, ?, 'Registered')");
+          $stmtIns->execute([$uName, $uEmail ?: null, $id]);
+          flash_set("Successfully registered for the event! " . ($uEmail ? "A confirmation will be sent to your email." : ""));
+      }
+      redirect("events.php");
+  }
+
   $mode = $_POST["mode"] ?? "create";
   $title = trim((string)($_POST["title"] ?? ""));
   $event_date = (string)($_POST["event_date"] ?? "");
@@ -128,6 +150,9 @@ if ($action === "delete" && $id > 0) {
   redirect("events.php");
 }
 
+/* -----------------------
+   EDIT FETCH
+------------------------ */
 $edit = null;
 if ($action === "edit" && $id > 0) {
   $stmt = $pdo->prepare("SELECT * FROM events WHERE id=?");
@@ -141,6 +166,19 @@ $q = trim((string)($_GET["q"] ?? ""));
 $statusF = trim((string)($_GET["status"] ?? ""));
 $from = trim((string)($_GET["from"] ?? ""));
 $to = trim((string)($_GET["to"] ?? ""));
+
+// Keep track of which events the current user has applied for
+$appliedEvents = [];
+if ($userRole === "Member" || $userRole === "user") {
+    $stmtUser = $pdo->prepare("SELECT email FROM users WHERE id=?");
+    $stmtUser->execute([(int)$_SESSION["user"]["id"]]);
+    $uEmail = $stmtUser->fetchColumn();
+    $uName = $_SESSION["user"]["username"];
+    
+    $stmtApp = $pdo->prepare("SELECT event_id FROM attendees WHERE full_name=? OR email=?");
+    $stmtApp->execute([$uName, $uEmail ?: 'N/A']);
+    $appliedEvents = $stmtApp->fetchAll(PDO::FETCH_COLUMN);
+}
 
 $page = max(1, (int)($_GET["page"] ?? 1));
 $perPage = 8;
@@ -318,7 +356,7 @@ require_once __DIR__ . "/header.php";
               </select>
             </div>
             <div style="display:flex; gap:10px; flex-wrap:nowrap;">
-              <button class="btn" type="submit" style="padding: 10px 20px;">Apply</button>
+              <button class="btn" type="submit" style="padding: 10px 20px;">Search</button>
               <a class="btn btn-ghost" href="events.php" style="padding: 10px 15px;">Reset</a>
               <a class="btn btn-ghost" href="events_export.php?<?= http_build_query($_GET) ?>" style="padding: 10px 15px;">CSV</a>
               <a class="btn btn-ghost" target="_blank" href="events_report.php?<?= http_build_query($_GET) ?>" style="padding: 10px 15px; white-space:nowrap;">Print Report</a>
@@ -333,6 +371,8 @@ require_once __DIR__ . "/header.php";
                 <th>Date</th><th>Title</th><th>Location</th><th>Category</th><th>Status</th>
                 <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
                   <th>Actions</th>
+                <?php else: ?>
+                  <th>Register</th>
                 <?php endif; ?>
               </tr>
             </thead>
@@ -357,6 +397,19 @@ require_once __DIR__ . "/header.php";
                       <a class="btn btn-ghost" href="events.php?action=edit&id=<?= (int)$r["id"] ?>">Edit</a>
                       <a class="btn btn-danger" href="events.php?action=delete&id=<?= (int)$r["id"] ?>"
                          onclick="return confirm('Delete this event?');">Delete</a>
+                    </td>
+                  <?php else: ?>
+                    <td class="actions">
+                      <?php if (in_array($r["id"], $appliedEvents)): ?>
+                         <span class="pill" style="background:var(--brand); color:#fff; font-weight:800; border:none; white-space:nowrap;">✓ Registered Successfully</span>
+                      <?php elseif ($r["status"] === "Scheduled" || $r["status"] === "Ongoing"): ?>
+                         <form method="post" action="events.php?action=apply&id=<?= (int)$r["id"] ?>" style="display:inline;">
+                             <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
+                             <button type="submit" class="btn" style="padding: 6px 16px; font-size: 0.8rem;" onclick="return confirm('Register for <?= e(addslashes($r["title"])) ?>?');">✋ Apply</button>
+                         </form>
+                      <?php else: ?>
+                         <span class="small" style="color:var(--muted); font-weight:600;">Closed</span>
+                      <?php endif; ?>
                     </td>
                   <?php endif; ?>
                 </tr>

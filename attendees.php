@@ -132,7 +132,7 @@ require_once __DIR__ . "/header.php";
 </div>
 
 <div class="grid">
-  <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
+  <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"]) && $edit): ?>
     <!-- Top: Form (Full Width) -->
     <div class="col-12">
       <div class="card">
@@ -232,7 +232,7 @@ require_once __DIR__ . "/header.php";
               </select>
             </div>
             <div style="display:flex; gap:10px; flex-wrap:nowrap;">
-              <button class="btn" type="submit" style="padding: 10px 20px;">Apply</button>
+              <button class="btn" type="submit" style="padding: 10px 20px;">Search</button>
               <a class="btn btn-ghost" href="attendees.php" style="padding: 10px 15px;">Reset</a>
               <a class="btn btn-ghost" href="attendees_export.php?<?= e(http_build_query($_GET)) ?>" style="padding: 10px 15px;">CSV</a>
               <a class="btn btn-ghost" target="_blank" href="attendees_report.php?<?= e(http_build_query($_GET)) ?>" style="padding: 10px 15px; white-space:nowrap;">Print List</a>
@@ -267,9 +267,11 @@ require_once __DIR__ . "/header.php";
                   <td><?= e($r["event_title"] ?? "-") ?> <?= (isset($r["event_date"]) && $r["event_date"]) ? "• ".e(format_date($r["event_date"])) : "" ?></td>
                   <td>
                     <?php
-                      $color = ["Registered"=>"var(--brand2)", "Confirmed"=>"var(--brand)", "Attended"=>"var(--brand2)", "Cancelled"=>"var(--danger)"][$r["attendance_status"]] ?? "var(--text)";
+                      $actualStatus = $r["attendance_status"];
+                      $dispStatus = ($actualStatus === "Registered") ? "Registered Successfully" : $actualStatus;
+                      $color = ["Registered"=>"var(--brand)", "Confirmed"=>"var(--brand2)", "Attended"=>"var(--brand2)", "Cancelled"=>"var(--danger)"][$actualStatus] ?? "var(--text)";
                     ?>
-                    <span style="color:<?= $color ?>; font-weight:800; font-size:0.85rem;">● <?= e($r["attendance_status"]) ?></span>
+                    <span style="color:<?= $color ?>; font-weight:800; font-size:0.85rem; <?= $actualStatus === 'Registered' ? 'background:rgba(46,233,166,0.1); padding:4px 8px; border-radius:6px;' : '' ?>">● <?= e($dispStatus) ?></span>
                   </td>
                   <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
                     <td class="actions">

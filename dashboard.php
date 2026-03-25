@@ -241,47 +241,8 @@ require_once __DIR__ . "/header.php";
      EVENTS TAB
 ============================================================ -->
 <?php if ($tab === "events"): ?>
-  <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
-  <div class="col-12">
-    <div class="crud-form">
-      <h2 style="margin:0 0 16px; font-weight:950; font-size:1.3rem;">
-        <?= $edit ? '✏️ Edit Event' : '➕ Create New Event' ?>
-      </h2>
-      <form method="post" action="dashboard.php?tab=events">
-        <input type="hidden" name="mode" value="<?= $edit ? 'update' : 'create' ?>">
-        <?php if ($edit): ?><input type="hidden" name="id" value="<?= (int)$edit['id'] ?>"><?php endif; ?>
-        <div class="grid" style="gap:12px;">
-          <div class="col-6">
-            <label class="small" style="font-weight:800;">Event Title *</label>
-            <input class="input" name="title" required placeholder="e.g. Sunday Worship" value="<?= e2($edit['title'] ?? '') ?>">
-          </div>
-          <div class="col-3">
-            <label class="small" style="font-weight:800;">📅 Event Date *</label>
-            <input class="input" type="date" name="event_date" required value="<?= e2($edit['event_date'] ?? '') ?>">
-          </div>
-          <div class="col-3">
-            <label class="small" style="font-weight:800;">Status</label>
-            <select class="select" name="status">
-              <?php foreach(["Scheduled","Ongoing","Completed","Cancelled"] as $s): ?>
-                <option value="<?= $s ?>" <?= ($edit['status'] ?? 'Scheduled') === $s ? 'selected' : '' ?>><?= $s ?></option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          <div class="col-6">
-            <label class="small" style="font-weight:800;">📍 Location *</label>
-            <input class="input" name="location" required placeholder="e.g. Main Sanctuary" value="<?= e2($edit['location'] ?? '') ?>">
-          </div>
-          <div class="col-6" style="display:flex; align-items:flex-end; gap:10px;">
-            <button type="submit" class="btn" style="padding:12px 24px; background:linear-gradient(135deg,var(--brand),var(--brand2)); color:#07101f; font-weight:950; border:none;">
-              <?= $edit ? '💾 Update Event' : '➕ Create Event' ?>
-            </button>
-            <?php if ($edit): ?><a href="dashboard.php?tab=events" class="btn btn-ghost">Cancel</a><?php endif; ?>
-          </div>
-        </div>
-      </form>
-    </div>
-  </div>
-  <?php endif; ?>
+
+
 
   <div class="col-8">
     <div class="chartBox">
@@ -310,98 +271,15 @@ require_once __DIR__ . "/header.php";
     </div>
   </div>
 
-  <!-- Events Records Table -->
-  <div class="col-12" style="margin-top:18px;">
-    <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
-        <h2 style="margin:0; font-weight:900; font-size:1.3rem;">📋 Events Records</h2>
-        <div style="display:flex; gap:8px;">
-          <a href="events_report.php" class="btn" style="padding:8px 16px; font-size:0.85rem; background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.1);">🖨️ Print List</a>
-          <a href="events_export.php" class="btn" style="padding:8px 16px; font-size:0.85rem; background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.1);">📥 Export CSV</a>
-          <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
-          <a href="events.php" class="btn btn-ghost" style="font-size:0.85rem;">Full Management →</a>
-          <?php endif; ?>
-        </div>
-      </div>
-      <div style="overflow-x:auto; margin-top:14px;">
-        <table class="table">
-          <thead><tr><th>Title</th><th>📅 Date</th><th>📍 Location</th><th>Status</th><?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?><th>Actions</th><?php endif; ?></tr></thead>
-          <tbody>
-            <?php foreach($rows as $r): ?>
-              <tr>
-                <td style="font-weight:800;"><?= e2($r["title"]) ?></td>
-                <td style="color:var(--brand2); font-weight:700;"><?= e2($r["event_date"]) ?></td>
-                <td><?= e2($r["location"]) ?></td>
-                <td>
-                  <?php $sc=["Completed"=>"rgba(46,233,166,0.15)","Scheduled"=>"rgba(124,92,255,0.15)","Ongoing"=>"rgba(255,193,7,0.15)","Cancelled"=>"rgba(255,77,109,0.15)"][$r["status"]] ?? "rgba(255,255,255,.06)";
-                  $stc=["Completed"=>"var(--brand2)","Scheduled"=>"var(--brand)","Ongoing"=>"var(--warning)","Cancelled"=>"var(--danger)"][$r["status"]] ?? "var(--text)"; ?>
-                  <span class="tag" style="background:<?= $sc ?>;color:<?= $stc ?>;"><?= e2($r["status"]) ?></span>
-                </td>
-                <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
-                <td>
-                  <div style="display:flex; gap:6px;">
-                    <a href="dashboard.php?tab=events&action=edit&id=<?= $r['id'] ?>" class="btn" style="padding:5px 10px;font-size:0.75rem;">✏️ Edit</a>
-                    <a href="dashboard.php?tab=events&action=delete&id=<?= $r['id'] ?>" class="btn btn-danger" style="padding:5px 10px;font-size:0.75rem;" onclick="return confirm('Delete this event?')">🗑️</a>
-                  </div>
-                </td>
-                <?php endif; ?>
-              </tr>
-            <?php endforeach; ?>
-            <?php if (empty($rows)): ?>
-              <tr><td colspan="5" style="text-align:center; padding:30px; color:var(--muted);">No events yet. Create your first event above!</td></tr>
-            <?php endif; ?>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+
 <?php endif; ?>
 
 <!-- ============================================================
      VOLUNTEERS TAB
 ============================================================ -->
 <?php if ($tab === "volunteers"): ?>
-  <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist", "Member"])): ?>
-  <div class="col-12">
-    <div class="crud-form">
-      <h2 style="margin:0 0 16px; font-weight:950; font-size:1.3rem;">
-        <?= $edit ? '✏️ Edit Volunteer' : '➕ Add New Volunteer' ?>
-      </h2>
-      <form method="post" action="dashboard.php?tab=volunteers">
-        <input type="hidden" name="mode" value="<?= $edit ? 'update' : 'create' ?>">
-        <?php if ($edit): ?><input type="hidden" name="id" value="<?= (int)$edit['id'] ?>"><?php endif; ?>
-        <div class="grid" style="gap:12px;">
-          <div class="col-4">
-            <label class="small" style="font-weight:800;">Full Name *</label>
-            <input class="input" name="full_name" required placeholder="e.g. John Mutua" value="<?= e2($edit['full_name'] ?? '') ?>">
-          </div>
-          <div class="col-4">
-            <label class="small" style="font-weight:800;">📞 Phone</label>
-            <input class="input" name="phone" placeholder="e.g. 0712345678" value="<?= e2($edit['phone'] ?? '') ?>">
-          </div>
-          <div class="col-4">
-            <label class="small" style="font-weight:800;">Ministry *</label>
-            <input class="input" name="ministry" required placeholder="e.g. Worship, Ushering" value="<?= e2($edit['ministry'] ?? '') ?>">
-          </div>
-          <div class="col-4">
-            <label class="small" style="font-weight:800;">Availability</label>
-            <select class="select" name="availability">
-              <?php foreach(["Both","Weekdays","Weekends"] as $a): ?>
-                <option value="<?= $a ?>" <?= ($edit['availability'] ?? 'Both') === $a ? 'selected' : '' ?>><?= $a ?></option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          <div class="col-8" style="display:flex; align-items:flex-end; gap:10px;">
-            <button type="submit" class="btn" style="padding:12px 24px; background:linear-gradient(135deg,var(--brand),var(--brand2)); color:#07101f; font-weight:950; border:none;">
-              <?= $edit ? '💾 Update Volunteer' : '➕ Add Volunteer' ?>
-            </button>
-            <?php if ($edit): ?><a href="dashboard.php?tab=volunteers" class="btn btn-ghost">Cancel</a><?php endif; ?>
-          </div>
-        </div>
-      </form>
-    </div>
-  </div>
-  <?php endif; ?>
+
+
 
   <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
   <div class="col-12">
@@ -414,42 +292,7 @@ require_once __DIR__ . "/header.php";
     </div>
   </div>
 
-  <div class="col-12" style="margin-top:18px;">
-    <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
-        <h2 style="margin:0; font-weight:900; font-size:1.3rem;">📋 Volunteers Records</h2>
-        <div style="display:flex; gap:8px;">
-          <a href="volunteers_report.php" class="btn" style="padding:8px 16px; font-size:0.85rem; background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.1);">🖨️ Print List</a>
-          <a href="volunteers_export.php" class="btn" style="padding:8px 16px; font-size:0.85rem; background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.1);">📥 Export CSV</a>
-          <a href="volunteers.php" class="btn btn-ghost" style="font-size:0.85rem;">Full Management →</a>
-        </div>
-      </div>
-      <div style="overflow-x:auto; margin-top:14px;">
-        <table class="table">
-          <thead><tr><th>Name</th><th>Ministry</th><th>📞 Phone</th><th>Availability</th><th>Actions</th></tr></thead>
-          <tbody>
-            <?php foreach($rows as $r): ?>
-              <tr>
-                <td style="font-weight:800;"><?= e2($r["full_name"]) ?></td>
-                <td><span class="tag" style="background:rgba(124,92,255,0.15);color:#c4b5ff;"><?= e2($r["ministry"]) ?></span></td>
-                <td style="color:var(--brand2); font-weight:700;"><?= e2($r["phone"] ?: 'N/A') ?></td>
-                <td><span class="tag" style="background:rgba(255,193,7,0.15);color:var(--warning);">📁 <?= e2($r["availability"]) ?></span></td>
-                <td>
-                  <div style="display:flex; gap:6px;">
-                    <a href="dashboard.php?tab=volunteers&action=edit&id=<?= $r['id'] ?>" class="btn" style="padding:5px 10px;font-size:0.75rem;">✏️ Edit</a>
-                    <a href="dashboard.php?tab=volunteers&action=delete&id=<?= $r['id'] ?>" class="btn btn-danger" style="padding:5px 10px;font-size:0.75rem;" onclick="return confirm('Delete this volunteer?')">🗑️</a>
-                  </div>
-                </td>
-              </tr>
-            <?php endforeach; ?>
-            <?php if (empty($rows)): ?>
-              <tr><td colspan="5" style="text-align:center; padding:30px; color:var(--muted);">No volunteers yet. Add your first volunteer above!</td></tr>
-            <?php endif; ?>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+
   <?php endif; ?>
 <?php endif; ?>
 
@@ -457,54 +300,8 @@ require_once __DIR__ . "/header.php";
      ATTENDEES TAB
 ============================================================ -->
 <?php if ($tab === "attendees"): ?>
-  <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist", "Member"])): ?>
-  <div class="col-12">
-    <div class="crud-form">
-      <h2 style="margin:0 0 16px; font-weight:950; font-size:1.3rem;">
-        <?= $edit ? '✏️ Edit Attendee' : '➕ Register New Attendee' ?>
-      </h2>
-      <form method="post" action="dashboard.php?tab=attendees">
-        <input type="hidden" name="mode" value="<?= $edit ? 'update' : 'create' ?>">
-        <?php if ($edit): ?><input type="hidden" name="id" value="<?= (int)$edit['id'] ?>"><?php endif; ?>
-        <div class="grid" style="gap:12px;">
-          <div class="col-4">
-            <label class="small" style="font-weight:800;">Full Name *</label>
-            <input class="input" name="full_name" required placeholder="e.g. Grace Wanjiru" value="<?= e2($edit['full_name'] ?? '') ?>">
-          </div>
-          <div class="col-4">
-            <label class="small" style="font-weight:800;">📞 Phone</label>
-            <input class="input" name="phone" placeholder="e.g. 0712345678" value="<?= e2($edit['phone'] ?? '') ?>">
-          </div>
-          <div class="col-4">
-            <label class="small" style="font-weight:800;">📅 Assign to Event</label>
-            <select class="select" name="event_id">
-              <option value="">— No Event —</option>
-              <?php foreach($eventsList as $ev): ?>
-                <option value="<?= $ev['id'] ?>" <?= (($edit['event_id'] ?? '') == $ev['id']) ? 'selected' : '' ?>>
-                  <?= e2($ev['title'] . ' (' . $ev['event_date'] . ')') ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          <div class="col-4">
-            <label class="small" style="font-weight:800;">Attendance Status</label>
-            <select class="select" name="attendance_status">
-              <?php foreach(["Registered","Confirmed","Attended","Cancelled"] as $s): ?>
-                <option value="<?= $s ?>" <?= ($edit['attendance_status'] ?? 'Registered') === $s ? 'selected' : '' ?>><?= $s ?></option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          <div class="col-8" style="display:flex; align-items:flex-end; gap:10px;">
-            <button type="submit" class="btn" style="padding:12px 24px; background:linear-gradient(135deg,var(--brand),var(--brand2)); color:#07101f; font-weight:950; border:none;">
-              <?= $edit ? '💾 Update Attendee' : '➕ Register Attendee' ?>
-            </button>
-            <?php if ($edit): ?><a href="dashboard.php?tab=attendees" class="btn btn-ghost">Cancel</a><?php endif; ?>
-          </div>
-        </div>
-      </form>
-    </div>
-  </div>
-  <?php endif; ?>
+
+
 
   <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
   <div class="col-12">
@@ -517,46 +314,7 @@ require_once __DIR__ . "/header.php";
     </div>
   </div>
 
-  <div class="col-12" style="margin-top:18px;">
-    <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
-        <h2 style="margin:0; font-weight:900; font-size:1.3rem;">📋 Attendees Records</h2>
-        <div style="display:flex; gap:8px;">
-          <a href="attendees_report.php" class="btn" style="padding:8px 16px; font-size:0.85rem; background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.1);">🖨️ Print List</a>
-          <a href="attendees_export.php" class="btn" style="padding:8px 16px; font-size:0.85rem; background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.1);">📥 Export CSV</a>
-          <a href="attendees.php" class="btn btn-ghost" style="font-size:0.85rem;">Full Management →</a>
-        </div>
-      </div>
-      <div style="overflow-x:auto; margin-top:14px;">
-        <table class="table">
-          <thead><tr><th>Name</th><th>Event</th><th>📞 Phone</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>
-            <?php foreach($rows as $r): ?>
-              <tr>
-                <td style="font-weight:800;"><?= e2($r["full_name"]) ?></td>
-                <td style="color:#c4b5ff; font-weight:700;"><?= e2($r["event_title"] ?: 'General') ?></td>
-                <td style="color:var(--brand2); font-weight:700;"><?= e2($r["phone"] ?: 'N/A') ?></td>
-                <td>
-                  <?php $ac=["Attended"=>"rgba(46,233,166,0.15)","Confirmed"=>"rgba(124,92,255,0.15)","Registered"=>"rgba(255,193,7,0.15)","Cancelled"=>"rgba(255,77,109,0.15)"][$r["attendance_status"]] ?? "rgba(255,255,255,.06)";
-                  $atc=["Attended"=>"var(--brand2)","Confirmed"=>"var(--brand)","Registered"=>"var(--warning)","Cancelled"=>"var(--danger)"][$r["attendance_status"]] ?? "var(--text)"; ?>
-                  <span class="tag" style="background:<?= $ac ?>;color:<?= $atc ?>;"><?= e2($r["attendance_status"]) ?></span>
-                </td>
-                <td>
-                  <div style="display:flex; gap:6px;">
-                    <a href="dashboard.php?tab=attendees&action=edit&id=<?= $r['id'] ?>" class="btn" style="padding:5px 10px;font-size:0.75rem;">✏️ Edit</a>
-                    <a href="dashboard.php?tab=attendees&action=delete&id=<?= $r['id'] ?>" class="btn btn-danger" style="padding:5px 10px;font-size:0.75rem;" onclick="return confirm('Delete this attendee?')">🗑️</a>
-                  </div>
-                </td>
-              </tr>
-            <?php endforeach; ?>
-            <?php if (empty($rows)): ?>
-              <tr><td colspan="5" style="text-align:center; padding:30px; color:var(--muted);">No attendees yet. Register your first attendee above!</td></tr>
-            <?php endif; ?>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+
   <?php endif; ?>
 <?php endif; ?>
 

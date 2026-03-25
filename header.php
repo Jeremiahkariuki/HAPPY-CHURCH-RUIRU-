@@ -38,9 +38,9 @@ function isActiveTab(string $t, string $currentTab, string $page): bool {
       transform: translateX(-110%);
       transition:.18s ease;
       z-index:60;
-      padding:18px;
+      padding:12px 18px;
       display:flex; flex-direction:column;
-      gap:14px;
+      gap:8px;
     }
     .drawer.open{transform: translateX(0);}
 
@@ -67,12 +67,12 @@ function isActiveTab(string $t, string $currentTab, string $page): bool {
       color:var(--text);
       font-size:18px;
     }
-    .drawer-nav{display:flex;flex-direction:column;gap:10px;}
-    .drawer-section{margin-top:6px; font-size:.78rem; color:var(--muted); letter-spacing:.12em;}
+    .drawer-nav{display:flex;flex-direction:column;gap:5px;}
+    .drawer-section{margin-top:2px; font-size:.78rem; color:var(--muted); letter-spacing:.12em;}
 
     .drawer-item{
       display:flex; align-items:center; justify-content:space-between; gap:10px;
-      padding:12px 12px;
+      padding:10px 12px;
       border-radius: 14px;
       background: rgba(255,255,255,.04);
       border: var(--border);
@@ -97,7 +97,7 @@ function isActiveTab(string $t, string $currentTab, string $page): bool {
     }
     .drawer-foot{
       margin-top:auto;
-      padding:14px;
+      padding:12px;
       border-radius: var(--radius);
       background: rgba(255,255,255,.04);
       border: var(--border);
@@ -219,7 +219,13 @@ function isActiveTab(string $t, string $currentTab, string $page): bool {
     </button>
     <div>
       <div class="topbar-title"><?= e($appName) ?></div>
-      <div class="topbar-sub">Admin Dashboard</div>
+      <div class="topbar-sub">
+        <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
+          Admin Dashboard
+        <?php else: ?>
+          Member Dashboard
+        <?php endif; ?>
+      </div>
     </div>
   </div>
   <div class="tag">Secure</div>

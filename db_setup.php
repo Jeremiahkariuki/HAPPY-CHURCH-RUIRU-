@@ -1,6 +1,10 @@
 <?php
+$host = getenv('DB_HOST') ?: "127.0.0.1";
+$user = getenv('DB_USER') ?: "root";
+$pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : "";
+
 try {
-  $pdo = new PDO('mysql:host=127.0.0.1', 'root', '');
+  $pdo = new PDO("mysql:host=$host", $user, $pass);
   $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
   $pdo->exec('CREATE DATABASE IF NOT EXISTS `church_events_system`');
   $pdo->exec('USE `church_events_system`');
