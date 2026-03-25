@@ -39,7 +39,31 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   } else {
     $stmt = $pdo->prepare("INSERT INTO attendees (full_name, phone, email, event_id, attendance_status) VALUES (?,?,?,?,?)");
     $stmt->execute([$full_name, $phone ?: null, $email ?: null, $event_id, $attendance_status]);
-    flash_set("Attendee added.");
+    
+    // Auto-Notification: Send confirmation email if email is provided
+    if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $eventTitle = "Church Event";
+        if ($event_id > 0) {
+            $eStmt = $pdo->prepare("SELECT title, event_date, location FROM events WHERE id=?");
+            $eStmt->execute([$event_id]);
+            $evData = $eStmt->fetch();
+            if ($evData) {
+                $eventTitle = $evData["title"] . " (" . format_date($evData["event_date"]) . ")";
+            }
+        }
+        
+        $subj = "Event Registration Confirmed - HAPPY CHURCH RUIRU";
+        $msg = "Dear <strong>$full_name</strong>,<br><br>" .
+               "This is to confirm that you have been successfully registered for <strong>HAPPY CHURCH RUIRU</strong>!<br><br>" .
+               "📅 <strong>Event:</strong> $eventTitle<br>" .
+               "✅ <strong>Status:</strong> $attendance_status<br><br>" .
+               "We look forward to seeing you. Thank you and God bless!";
+        
+        send_church_email($email, $subj, $msg);
+    }
+    
+    flash_set("Attendee added Successfully! " . ($email ? "A confirmation has been sent to " . e($email) : ""));
+
   }
 
   redirect("attendees.php");
