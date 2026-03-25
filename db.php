@@ -2,7 +2,8 @@
 declare(strict_types=1);
 
 $host = getenv('DB_HOST') ?: "127.0.0.1";
-$db   = getenv('DB_NAME') ?: "church_events_system";
+$isLocal = in_array($host, ["127.0.0.1", "localhost"]);
+$db   = getenv('DB_NAME') ?: ($isLocal ? "church_events_system" : "defaultdb");
 $user = getenv('DB_USER') ?: "root";
 $pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : "";
 
