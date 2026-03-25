@@ -75,9 +75,25 @@ $attsCount     = (int)($pdo->query("SELECT COUNT(*) FROM attendees")->fetchColum
 $upcomingCount = (int)($pdo->query("SELECT COUNT(*) FROM events WHERE event_date >= CURDATE()")->fetchColumn() ?: 0);
 $todayCount    = (int)($pdo->query("SELECT COUNT(*) FROM events WHERE event_date = CURDATE()")->fetchColumn() ?: 0);
 $completedCount= (int)($pdo->query("SELECT COUNT(*) FROM events WHERE status = 'Completed'")->fetchColumn() ?: 0);
-$attendedCount = (int)($pdo->query("SELECT COUNT(*) FROM attendees WHERE attendance_status='Attended'")->fetchColumn() ?: 0);
-$cancelledAtt  = (int)($pdo->query("SELECT COUNT(*) FROM attendees WHERE attendance_status='Cancelled'")->fetchColumn() ?: 0);
-$attRate = ($attsCount > 0) ? round(($attendedCount / max(1, $attsCount - $cancelledAtt)) * 100, 1) : 0.0;
+// Functional Attendance Rate: (Attended / Total Registered) for COMPLETED events only
+try {
+    $completedEventIds = $pdo->query("SELECT id FROM events WHERE status = 'Completed'")->fetchAll(PDO::FETCH_COLUMN);
+    if (!empty($completedEventIds)) {
+        $placeholders = implode(',', array_fill(0, count($completedEventIds), '?'));
+        $stmtRegistered = $pdo->prepare("SELECT COUNT(*) FROM attendees WHERE event_id IN ($placeholders) AND attendance_status != 'Cancelled'");
+        $stmtRegistered->execute($completedEventIds);
+        $totalRegisteredForCompleted = (int)$stmtRegistered->fetchColumn();
+
+        $stmtAttended = $pdo->prepare("SELECT COUNT(*) FROM attendees WHERE event_id IN ($placeholders) AND attendance_status = 'Attended'");
+        $stmtAttended->execute($completedEventIds);
+        $totalAttendedForCompleted = (int)$stmtAttended->fetchColumn();
+
+        $attRate = ($totalRegisteredForCompleted > 0) ? round(($totalAttendedForCompleted / $totalRegisteredForCompleted) * 100, 1) : 100.0;
+    } else {
+        // If no events are completed, we show 100% or "N/A" - let's go with 100% as a positive baseline
+        $attRate = 100.0;
+    }
+} catch (Exception $e) { $attRate = 0.0; }
 
 /* ==========================
    EVENTS CRUD

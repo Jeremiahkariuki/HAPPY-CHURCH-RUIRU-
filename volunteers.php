@@ -206,9 +206,9 @@ require_once __DIR__ . "/header.php";
       <div class="card">
         <div style="font-weight:950; font-size:1.4rem;">
           <?php if (!$isAdmin): ?>
-            Volunteer Registration
+            Volunteers
           <?php else: ?>
-            Edit Volunteer
+            Volunteers
           <?php endif; ?>
         </div>
         <div class="small" style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px;">
