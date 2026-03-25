@@ -22,6 +22,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $error = "Passwords do not match.";
     } elseif (strlen($password) < 6) {
         $error = "Password must be at least 6 characters.";
+    } elseif (!$pdo) {
+        $error = "Database connection unavailable. Please start MySQL in XAMPP.";
     } else {
         try {
             $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");
@@ -58,6 +60,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     }
                 }
                 $success = "Account created! Please wait for Admin approval before logging in.";
+                }
             }
         } catch (PDOException $e) {
             $error = "Database error: " . $e->getMessage();

@@ -373,9 +373,10 @@ class TTFParser
 		{
 			$this->glyphs[$id]['ssid'] = count($this->subsettedGlyphs);
 			$this->subsettedGlyphs[] = $id;
-			if(isset($this->glyphs[$id]['components']))
+			$components = isset($this->glyphs[$id]['components']) ? $this->glyphs[$id]['components'] : null;
+			if(is_array($components))
 			{
-				foreach($this->glyphs[$id]['components'] as $cid)
+				foreach($components as $cid)
 					$this->AddGlyph($cid);
 			}
 		}
@@ -528,10 +529,14 @@ class TTFParser
 			if(isset($glyph['components']))
 			{
 				// Composite glyph
-				foreach($glyph['components'] as $offset=>$cid)
+				$components = isset($glyph['components']) ? $glyph['components'] : null;
+				if(is_array($components))
 				{
-					$ssid = $this->glyphs[$cid]['ssid'];
-					$glyph_data = substr_replace($glyph_data, pack('n',$ssid), $offset, 2);
+					foreach($components as $offset=>$cid)
+					{
+						$ssid = $this->glyphs[$cid]['ssid'];
+						$glyph_data = substr_replace($glyph_data, pack('n',$ssid), $offset, 2);
+					}
 				}
 			}
 			$data .= $glyph_data;
@@ -674,14 +679,14 @@ class TTFParser
 
 	function ReadUShort()
 	{
-		$a = unpack('nn', fread($this->f,2));
-		return $a['n'];
+		$a = unpack('n', fread($this->f, 2));
+		return $a[1];
 	}
 
 	function ReadShort()
 	{
-		$a = unpack('nn', fread($this->f,2));
-		$v = $a['n'];
+		$a = unpack('n', fread($this->f, 2));
+		$v = $a[1];
 		if($v>=0x8000)
 			$v -= 65536;
 		return $v;
@@ -689,8 +694,8 @@ class TTFParser
 
 	function ReadULong()
 	{
-		$a = unpack('NN', fread($this->f,4));
-		return $a['N'];
+		$a = unpack('N', fread($this->f, 4));
+		return $a[1];
 	}
 
 	function CheckSum($s)

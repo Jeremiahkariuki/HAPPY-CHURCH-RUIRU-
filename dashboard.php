@@ -27,54 +27,54 @@ $today = date("Y-m-d");
 $dbErr = false;
 
 try {
-    $eventsMonthly = $pdo->query("
+    $eventsMonthly = $pdo ? $pdo->query("
       SELECT DATE_FORMAT(event_date, '%Y-%m') AS ym, COUNT(*) AS c
       FROM events
       WHERE event_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
       GROUP BY ym ORDER BY ym ASC
-    ")->fetchAll(PDO::FETCH_ASSOC);
+    ")->fetchAll(PDO::FETCH_ASSOC) : [];
 } catch (Exception $e) { $eventsMonthly = []; $dbErr = true; }
 
 $monthLabels = []; $monthCounts = [];
 foreach ($eventsMonthly as $r) { $monthLabels[] = (string)$r["ym"]; $monthCounts[] = (int)$r["c"]; }
 
 try {
-    $attStatus = $pdo->query("SELECT attendance_status AS s, COUNT(*) AS c FROM attendees GROUP BY attendance_status ORDER BY c DESC")->fetchAll(PDO::FETCH_ASSOC);
+    $attStatus = $pdo ? $pdo->query("SELECT attendance_status AS s, COUNT(*) AS c FROM attendees GROUP BY attendance_status ORDER BY c DESC")->fetchAll(PDO::FETCH_ASSOC) : [];
 } catch (Exception $e) { $attStatus = []; $dbErr = true; }
 
 $attLabels = []; $attCounts = [];
 foreach ($attStatus as $r) { $attLabels[] = (string)($r["s"] ?: "Unknown"); $attCounts[] = (int)$r["c"]; }
 
 try {
-    $eventsDaily30 = $pdo->query("
+    $eventsDaily30 = $pdo ? $pdo->query("
       SELECT DATE(event_date) AS d, COUNT(*) AS c FROM events
       WHERE event_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY d ORDER BY d ASC
-    ")->fetchAll(PDO::FETCH_ASSOC);
+    ")->fetchAll(PDO::FETCH_ASSOC) : [];
 } catch (Exception $e) { $eventsDaily30 = []; $dbErr = true; }
 
 $dailyLabels30 = []; $dailyCounts30 = [];
 foreach ($eventsDaily30 as $r) { $dailyLabels30[] = (string)$r["d"]; $dailyCounts30[] = (int)$r["c"]; }
 
 try {
-    $volsByMinistry = $pdo->query("SELECT COALESCE(NULLIF(ministry,''),'Unknown') AS m, COUNT(*) AS c FROM volunteers GROUP BY m ORDER BY c DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC);
+    $volsByMinistry = $pdo ? $pdo->query("SELECT COALESCE(NULLIF(ministry,''),'Unknown') AS m, COUNT(*) AS c FROM volunteers GROUP BY m ORDER BY c DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC) : [];
 } catch (Exception $e) { $volsByMinistry = []; $dbErr = true; }
 
 $volsMinistryLabels = []; $volsMinistryCounts = [];
 foreach ($volsByMinistry as $r) { $volsMinistryLabels[] = (string)$r["m"]; $volsMinistryCounts[] = (int)$r["c"]; }
 
 try {
-    $attsByEvent = $pdo->query("SELECT COALESCE(e.title,'(No Event)') AS t, COUNT(*) AS c FROM attendees a LEFT JOIN events e ON e.id=a.event_id GROUP BY t ORDER BY c DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC);
+    $attsByEvent = $pdo ? $pdo->query("SELECT COALESCE(e.title,'(No Event)') AS t, COUNT(*) AS c FROM attendees a LEFT JOIN events e ON e.id=a.event_id GROUP BY t ORDER BY c DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC) : [];
 } catch (Exception $e) { $attsByEvent = []; $dbErr = true; }
 
 $attsEventLabels = []; $attsEventCounts = [];
 foreach ($attsByEvent as $r) { $attsEventLabels[] = (string)$r["t"]; $attsEventCounts[] = (int)$r["c"]; }
 
-$eventsCount   = (int)($pdo->query("SELECT COUNT(*) FROM events")->fetchColumn() ?: 0);
-$volsCount     = (int)($pdo->query("SELECT COUNT(*) FROM volunteers")->fetchColumn() ?: 0);
-$attsCount     = (int)($pdo->query("SELECT COUNT(*) FROM attendees")->fetchColumn() ?: 0);
-$upcomingCount = (int)($pdo->query("SELECT COUNT(*) FROM events WHERE event_date >= CURDATE()")->fetchColumn() ?: 0);
-$todayCount    = (int)($pdo->query("SELECT COUNT(*) FROM events WHERE event_date = CURDATE()")->fetchColumn() ?: 0);
-$completedCount= (int)($pdo->query("SELECT COUNT(*) FROM events WHERE status = 'Completed'")->fetchColumn() ?: 0);
+$eventsCount   = (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM events")->fetchColumn() ?: 0) : 0);
+$volsCount     = (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM volunteers")->fetchColumn() ?: 0) : 0);
+$attsCount     = (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM attendees")->fetchColumn() ?: 0) : 0);
+$upcomingCount = (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM events WHERE event_date >= CURDATE()")->fetchColumn() ?: 0) : 0);
+$todayCount    = (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM events WHERE event_date = CURDATE()")->fetchColumn() ?: 0) : 0);
+$completedCount= (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM events WHERE status = 'Completed'")->fetchColumn() ?: 0) : 0);
 // Functional Attendance Rate: (Attended / Total Registered) for COMPLETED events only
 try {
     $completedEventIds = $pdo->query("SELECT id FROM events WHERE status = 'Completed'")->fetchAll(PDO::FETCH_COLUMN);
