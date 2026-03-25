@@ -387,7 +387,7 @@ require_once __DIR__ . "/header.php";
           <table class="table">
             <thead>
               <tr>
-                <th>Date</th><th>Title</th><th>Location</th><th>Category</th><th>Status</th>
+                <th>Date</th><th>Title</th><th>Location</th><th class="hide-mobile">Category</th><th>Status</th>
                 <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
                   <th>Actions</th>
                 <?php else: ?>
@@ -404,7 +404,7 @@ require_once __DIR__ . "/header.php";
                     <div class="small" style="max-height:32px; overflow:hidden;"><?= e($r["description"] ?? "") ?></div>
                   </td>
                   <td><?= e($r["location"]) ?></td>
-                  <td><span class="pill" style="font-size:0.7rem; margin:0;"><?= e($r["category"]) ?></span></td>
+                   <td class="hide-mobile"><span class="pill" style="font-size:0.7rem; margin:0;"><?= e($r["category"]) ?></span></td>
                   <td>
                      <?php
                        $color = ["Scheduled"=>"var(--brand)", "Ongoing"=>"var(--brand2)", "Completed"=>"var(--muted)", "Cancelled"=>"var(--danger)"][$r["status"]] ?? "var(--text)";

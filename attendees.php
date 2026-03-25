@@ -268,7 +268,7 @@ require_once __DIR__ . "/header.php";
           <table class="table">
             <thead>
               <tr>
-                <th>Name</th><th>Phone / Email</th><th>Event</th><th>Status</th>
+                <th>Name</th><th class="hide-mobile">Phone / Email</th><th>Event</th><th>Status</th>
                 <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
                   <th>Actions</th>
                 <?php endif; ?>
@@ -278,7 +278,7 @@ require_once __DIR__ . "/header.php";
               <?php foreach ($rows as $r): ?>
                 <tr>
                   <td style="font-weight:700;"><?= e($r["full_name"]) ?></td>
-                  <td class="small">
+                  <td class="hide-mobile small">
                     <?php if ($r["phone"]): ?>
                       <a href="tel:<?= e($r["phone"]) ?>" style="color:var(--brand2); font-weight:700; display:flex; align-items:center; gap:6px;">
                         📞 <?= e($r["phone"]) ?>

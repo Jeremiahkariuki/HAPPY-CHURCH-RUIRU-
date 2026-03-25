@@ -401,7 +401,7 @@ require_once __DIR__ . "/header.php";
           <table class="table">
             <thead>
               <tr>
-                <th>Name</th><th>Ministry</th><th>Phone / Email</th><th>Event</th><th>Availability</th>
+                <th>Name</th><th>Ministry</th><th>Phone / Email</th><th>Event</th><th class="hide-mobile">Availability</th>
                 <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
                   <th>Actions</th>
                 <?php endif; ?>
