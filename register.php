@@ -96,11 +96,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <form method="post" style="margin-top:16px;display:grid;gap:12px;">
 <div>
 <label class="small">Username</label>
-<input class="input" name="username" placeholder="Choose a username" required value="<?= e($username ?? "") ?>">
+<input class="input" name="username" placeholder="Choose a username" required value="<?= e($username ?? "") ?>" autocorrect="off" autocapitalize="none">
 </div>
 <div>
 <label class="small">Email Address (Gmail preferred)</label>
-<input class="input" type="email" name="email" placeholder="email@gmail.com" required value="<?= e($email ?? "") ?>">
+<input class="input" type="email" name="email" placeholder="email@gmail.com" required value="<?= e($email ?? "") ?>" autocorrect="off" autocapitalize="none">
 </div>
 <div>
 <label class="small">Desired Role</label>
