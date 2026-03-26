@@ -2,9 +2,11 @@
 declare(strict_types=1);
 
 $baseHost = getenv('DB_HOST') ?: "127.0.0.1";
-$port = 3306;
+$port = getenv('DB_PORT') ?: 3306;
+
 if (strpos($baseHost, ':') !== false) {
-    list($host, $port) = explode(':', $baseHost, 2);
+    list($host, $p) = explode(':', $baseHost, 2);
+    $port = $p;
 } else {
     $host = $baseHost;
 }
@@ -43,8 +45,8 @@ try {
     // If DB fails, it means MySQL is likely OFF or credentials are wrong
     $isRender = isset($_SERVER['RENDER']) || getenv('RENDER');
     $db_connect_error = $isRender 
-        ? "<strong>Cloud DB Error:</strong> " . htmlspecialchars($e->getMessage())
-        : "<strong>Database connection failed.</strong> " . htmlspecialchars($e->getMessage());
+        ? "Cloud DB Error: " . $e->getMessage()
+        : "Database connection failed. " . $e->getMessage();
     
     error_log("DB Connection Error: " . $e->getMessage());
     $pdo = null;
