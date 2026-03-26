@@ -12,8 +12,8 @@ $host = $baseHost;
 // Robust parser: If user pasted a full Aiven connection URI (mysql://user:pass@host:port/db) inside DB_HOST
 if (strpos($baseHost, 'mysql://') === 0 || strpos($baseHost, 'mysql+ssl://') === 0) {
     $parsed = parse_url($baseHost);
-    if ($parsed) {
-        $host = $parsed['host'] ?? "127.0.0.1";
+    if ($parsed && isset($parsed['host'])) {
+        $host = $parsed['host'];
         $port = isset($parsed['port']) ? (string)$parsed['port'] : $port;
         $user = $parsed['user'] ?? $user;
         $pass = $parsed['pass'] ?? $pass;
@@ -73,7 +73,7 @@ try {
     // If DB fails, it means MySQL is likely OFF or credentials are wrong
     $isRender = isset($_SERVER['RENDER']) || getenv('RENDER');
     $db_connect_error = $isRender 
-        ? "Cloud DB Error: " . $e->getMessage()
+        ? "Cloud DB Error (Host: $host): " . $e->getMessage()
         : "Database connection failed. " . $e->getMessage();
     
     error_log("DB Connection Error: " . $e->getMessage());
