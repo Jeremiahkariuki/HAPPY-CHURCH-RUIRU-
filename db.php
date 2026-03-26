@@ -1,31 +1,30 @@
 <?php
 declare(strict_types=1);
 
-$baseHost = getenv('DB_HOST') ?: "127.0.0.1";
-$port = getenv('DB_PORT') ?: 3306;
-$user = getenv('DB_USER') ?: "root";
-$pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : "";
-$db   = getenv('DB_NAME') ?: "";
+$baseHost = trim((string)(getenv('DB_HOST') ?: "127.0.0.1"));
+$port     = trim((string)(getenv('DB_PORT') ?: 3306));
+$user     = trim((string)(getenv('DB_USER') ?: "root"));
+$pass     = getenv('DB_PASS') !== false ? trim((string)getenv('DB_PASS')) : "";
+$db       = trim((string)(getenv('DB_NAME') ?: ""));
+
+$host = $baseHost;
 
 // Robust parser: If user pasted a full Aiven connection URI (mysql://user:pass@host:port/db) inside DB_HOST
 if (strpos($baseHost, 'mysql://') === 0 || strpos($baseHost, 'mysql+ssl://') === 0) {
     $parsed = parse_url($baseHost);
     if ($parsed) {
         $host = $parsed['host'] ?? "127.0.0.1";
-        $port = $parsed['port'] ?? $port;
+        $port = isset($parsed['port']) ? (string)$parsed['port'] : $port;
         $user = $parsed['user'] ?? $user;
         $pass = $parsed['pass'] ?? $pass;
         $db   = ltrim($parsed['path'] ?? "", '/') ?: $db;
-    } else {
-        $host = $baseHost;
     }
 } else {
     // If they just pasted "host:port"
     if (strpos($baseHost, ':') !== false) {
-        list($host, $p) = explode(':', $baseHost, 2);
-        $port = $p;
-    } else {
-        $host = $baseHost;
+        list($h, $p) = explode(':', $baseHost, 2);
+        $host = trim($h);
+        $port = trim($p);
     }
 }
 
