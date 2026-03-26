@@ -58,15 +58,96 @@ try {
     // Now connect to the specific database
     $pdo = new PDO("mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4", $user, $pass, $options);
 
-    // --- Auto Schema Migrations for Legacy Databases ---
-    try { $pdo->query("SELECT email FROM attendees LIMIT 1"); } catch (Exception $e) {
-        try { $pdo->exec("ALTER TABLE attendees ADD COLUMN email varchar(100) DEFAULT NULL AFTER phone"); } catch(Exception $ex){}
+    // --- SELF-HEALING SCHEMA SYSTEM ---
+    // If users table is missing, build the entire system automatically
+    try {
+        $pdo->query("SELECT 1 FROM users LIMIT 1");
+    } catch (Exception $e) {
+        $schema = "
+        CREATE TABLE IF NOT EXISTS `users` (
+          `id` int(11) NOT NULL AUTO_INCREMENT,
+          `username` varchar(50) NOT NULL,
+          `password_hash` varchar(255) NOT NULL,
+          `email` varchar(100) DEFAULT NULL,
+          `role` varchar(20) NOT NULL DEFAULT 'user',
+          `status` varchar(20) NOT NULL DEFAULT 'Pending',
+          `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+          PRIMARY KEY (`id`),
+          UNIQUE KEY `username` (`username`),
+          UNIQUE KEY `email` (`email`)
+        );
+        CREATE TABLE IF NOT EXISTS `events` (
+          `id` int(11) NOT NULL AUTO_INCREMENT,
+          `title` varchar(100) NOT NULL,
+          `event_date` date NOT NULL,
+          `start_time` time DEFAULT NULL,
+          `end_time` time DEFAULT NULL,
+          `location` varchar(100) DEFAULT NULL,
+          `category` varchar(50) DEFAULT NULL,
+          `status` varchar(20) DEFAULT 'Upcoming',
+          `description` text DEFAULT NULL,
+          `image_path` varchar(255) DEFAULT NULL,
+          `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+          PRIMARY KEY (`id`)
+        );
+        CREATE TABLE IF NOT EXISTS `attendees` (
+          `id` int(11) NOT NULL AUTO_INCREMENT,
+          `full_name` varchar(100) NOT NULL,
+          `phone` varchar(20) DEFAULT NULL,
+          `email` varchar(100) DEFAULT NULL,
+          `event_id` int(11) NOT NULL,
+          `attendance_status` varchar(20) DEFAULT 'Registered',
+          `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+          PRIMARY KEY (`id`),
+          CONSTRAINT `fk_att_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS `volunteers` (
+          `id` int(11) NOT NULL AUTO_INCREMENT,
+          `full_name` varchar(100) NOT NULL,
+          `phone` varchar(20) DEFAULT NULL,
+          `email` varchar(100) DEFAULT NULL,
+          `ministry` varchar(100) DEFAULT NULL,
+          `availability` varchar(100) DEFAULT NULL,
+          `event_id` int(11) DEFAULT NULL,
+          `notes` text DEFAULT NULL,
+          `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+          PRIMARY KEY (`id`),
+          CONSTRAINT `fk_vol_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS `donations` (
+          `id` int(11) NOT NULL AUTO_INCREMENT,
+          `full_name` varchar(100) NOT NULL,
+          `amount` decimal(10,2) NOT NULL,
+          `payment_method` varchar(50) DEFAULT NULL,
+          `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+          PRIMARY KEY (`id`)
+        );
+        CREATE TABLE IF NOT EXISTS `gallery` (
+          `id` int(11) NOT NULL AUTO_INCREMENT,
+          `image_path` varchar(255) NOT NULL,
+          `caption` varchar(255) DEFAULT NULL,
+          `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+          PRIMARY KEY (`id`)
+        );
+        ";
+        $pdo->exec($schema);
+        
+        // Seed default admin (user: admin, pass: 123)
+        $adminHash = password_hash('123', PASSWORD_DEFAULT);
+        $stmt = $pdo->prepare("INSERT IGNORE INTO users (username, password_hash, role, status) VALUES ('admin', ?, 'admin', 'Approved')");
+        $stmt->execute([$adminHash]);
     }
-    try { $pdo->query("SELECT email FROM volunteers LIMIT 1"); } catch (Exception $e) {
-        try { $pdo->exec("ALTER TABLE volunteers ADD COLUMN email varchar(100) DEFAULT NULL AFTER phone"); } catch(Exception $ex){}
-    }
-    try { $pdo->query("SELECT event_id FROM volunteers LIMIT 1"); } catch (Exception $e) {
-        try { $pdo->exec("ALTER TABLE volunteers ADD COLUMN event_id int(11) DEFAULT NULL AFTER email"); } catch(Exception $ex){}
+
+    // --- AUTO MIGRATIONS (Ensure existing tables have new columns) ---
+    $migrations = [
+        "ALTER TABLE attendees ADD COLUMN IF NOT EXISTS email varchar(100) DEFAULT NULL AFTER phone",
+        "ALTER TABLE volunteers ADD COLUMN IF NOT EXISTS email varchar(100) DEFAULT NULL AFTER phone",
+        "ALTER TABLE volunteers ADD COLUMN IF NOT EXISTS event_id int(11) DEFAULT NULL AFTER email",
+        "ALTER TABLE events ADD COLUMN IF NOT EXISTS image_path varchar(255) DEFAULT NULL AFTER description",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS status varchar(20) NOT NULL DEFAULT 'Pending' AFTER role"
+    ];
+    foreach ($migrations as $m) {
+        try { $pdo->exec($m); } catch (Exception $e) {}
     }
 
 } catch (PDOException $e) {
