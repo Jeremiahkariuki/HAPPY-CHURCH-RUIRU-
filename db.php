@@ -59,6 +59,17 @@ try {
     // Now connect to the specific database
     $pdo = new PDO("mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4", $user, $pass, $options);
 
+    // --- Auto Schema Migrations for Legacy Databases ---
+    try { $pdo->query("SELECT email FROM attendees LIMIT 1"); } catch (Exception $e) {
+        try { $pdo->exec("ALTER TABLE attendees ADD COLUMN email varchar(100) DEFAULT NULL AFTER phone"); } catch(Exception $ex){}
+    }
+    try { $pdo->query("SELECT email FROM volunteers LIMIT 1"); } catch (Exception $e) {
+        try { $pdo->exec("ALTER TABLE volunteers ADD COLUMN email varchar(100) DEFAULT NULL AFTER phone"); } catch(Exception $ex){}
+    }
+    try { $pdo->query("SELECT event_id FROM volunteers LIMIT 1"); } catch (Exception $e) {
+        try { $pdo->exec("ALTER TABLE volunteers ADD COLUMN event_id int(11) DEFAULT NULL AFTER email"); } catch(Exception $ex){}
+    }
+
 } catch (PDOException $e) {
     // If DB fails, it means MySQL is likely OFF or credentials are wrong
     $isRender = isset($_SERVER['RENDER']) || getenv('RENDER');
