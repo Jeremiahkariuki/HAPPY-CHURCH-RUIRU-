@@ -139,10 +139,22 @@ try {
         ";
         $pdo->exec($schema);
         
-        // Seed default admin (user: admin, pass: 123)
         $adminHash = password_hash('123', PASSWORD_DEFAULT);
         $stmt = $pdo->prepare("INSERT IGNORE INTO users (username, password_hash, role, status) VALUES ('admin', ?, 'admin', 'Approved')");
         $stmt->execute([$adminHash]);
+
+        // Seed default gallery images from local uploads
+        $galleryImages = [
+            ['path' => 'uploads/gallery/08bd72b07820e59b.jpg', 'cap' => 'Community Gathering'],
+            ['path' => 'uploads/gallery/209efaa485ccced6.jpg', 'cap' => 'Sunday Service'],
+            ['path' => 'uploads/gallery/259de29104c49ed7.jpg', 'cap' => 'Youth Ministry'],
+            ['path' => 'uploads/gallery/9a9dc3d53c628f7b.jpg', 'cap' => 'Worship Team'],
+            ['path' => 'uploads/gallery/9d4b09ee6ecb70eb.jpg', 'cap' => 'Church Building'],
+            ['path' => 'uploads/gallery/a43f7a004e89bc17.jpg', 'cap' => 'Outreach Program'],
+        ];
+        foreach ($galleryImages as $img) {
+            $pdo->prepare("INSERT IGNORE INTO gallery (image_path, caption) VALUES (?, ?)")->execute([$img['path'], $img['cap']]);
+        }
     }
 
     // --- AUTO MIGRATIONS (Ensure existing tables have new columns) ---
