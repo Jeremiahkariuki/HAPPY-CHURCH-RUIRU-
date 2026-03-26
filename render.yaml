@@ -7,13 +7,15 @@ services:
     healthCheckPath: /health.php
     envVars:
       - key: DB_HOST
-        sync: false
+        value: "mysql://uvyjfieb0nz3gjns:ghlaCM5lBu9AdIqiljwv@blwa0wvl7pnkpndupnsv-mysql.services.clever-cloud.com:3306/blwa0wvl7pnkpndupnsv"
+      - key: MYSQL_ADDON_URI
+        value: "mysql://uvyjfieb0nz3gjns:ghlaCM5lBu9AdIqiljwv@blwa0wvl7pnkpndupnsv-mysql.services.clever-cloud.com:3306/blwa0wvl7pnkpndupnsv"
       - key: DB_NAME
-        sync: false
+        value: "blwa0wvl7pnkpndupnsv"
       - key: DB_USER
-        sync: false
+        value: "uvyjfieb0nz3gjns"
       - key: DB_PASS
-        sync: false
+        value: "ghlaCM5lBu9AdIqiljwv"
       - key: MAIL_USERNAME
         sync: false
       - key: MAIL_PASSWORD
