@@ -63,7 +63,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 }
             }
         } catch (PDOException $e) {
-            $error = "Database error: " . $e->getMessage();
+            // Check specifically for duplicate entry (which happens instantly if a user double-taps on mobile)
+            if ($e->getCode() == 23000) {
+                if (stripos($e->getMessage(), 'email') !== false) {
+                    $error = "This email address is already registered.";
+                } elseif (stripos($e->getMessage(), 'username') !== false) {
+                    $error = "This username is already taken.";
+                } else {
+                    $error = "An account with these details already exists.";
+                }
+            } else {
+                $error = "Database error: " . $e->getMessage();
+            }
         }
     }
 }
@@ -96,7 +107,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <div style="margin-top:14px;"><a href="login.php" class="btn">Go to Login</a></div>
 <?php else: ?>
 
-<form method="post" style="margin-top:16px;display:grid;gap:12px;">
+<form method="post" style="margin-top:16px;display:grid;gap:12px;" onsubmit="this.querySelector('button').disabled = true; this.querySelector('button').innerText = 'Starting...';">
 <div>
 <label class="small">Username</label>
 <input class="input" name="username" placeholder="Choose a username" required value="<?= e($username ?? "") ?>" autocorrect="off" autocapitalize="none">
