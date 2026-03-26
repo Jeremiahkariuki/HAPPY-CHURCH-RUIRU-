@@ -28,22 +28,23 @@ try {
         $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false; // Trust the server cert
     }
     
-    // 1. Try to connect to host first and create DB if it doesn't exist
-    $pdo = new PDO("mysql:host=$host;port=$port", $user, $pass, $options);
-    
-    // Only attempt to create DB if we are on localhost/127.0.0.1 or if DB_NAME is not explicitly set
-    if ($isLocal || !getenv('DB_NAME')) {
-        $pdo->exec("CREATE DATABASE IF NOT EXISTS `$db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+    // 1. For local environments, connect to host first and create DB if it doesn't exist.
+    // Cloud databases (like Aiven) pre-create the DB and block CREATE DATABASE commands.
+    if ($isLocal) {
+        $pdoTemp = new PDO("mysql:host=$host;port=$port", $user, $pass, $options);
+        $pdoTemp->exec("CREATE DATABASE IF NOT EXISTS `$db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $pdoTemp = null;
     }
+
     // Now connect to the specific database
     $pdo = new PDO("mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4", $user, $pass, $options);
 
 } catch (PDOException $e) {
     // If DB fails, it means MySQL is likely OFF or credentials are wrong
     $isRender = isset($_SERVER['RENDER']) || getenv('RENDER');
-    $error = $isRender 
-        ? "<strong>Cloud Database Not Connected.</strong> Please ensure you have added your Aiven credentials (DB_HOST, DB_USER, etc.) to the <strong>Render Environment</strong> tab."
-        : "<strong>Database connection failed.</strong> Please start MySQL in your <strong>XAMPP Control Panel</strong>.";
+    $db_connect_error = $isRender 
+        ? "<strong>Cloud DB Error:</strong> " . htmlspecialchars($e->getMessage())
+        : "<strong>Database connection failed.</strong> " . htmlspecialchars($e->getMessage());
     
     error_log("DB Connection Error: " . $e->getMessage());
     $pdo = null;

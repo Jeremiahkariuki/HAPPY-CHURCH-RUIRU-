@@ -5,7 +5,7 @@ require_once __DIR__ . "/helpers.php";
 
 $error = "";
 if (!isset($pdo) || $pdo === null) {
-    $error = "Database connection unavailable. Please ensure MySQL is running.";
+    $error = isset($db_connect_error) ? $db_connect_error : "Database connection unavailable. Please ensure MySQL is running.";
 }
 $success = "";
 
