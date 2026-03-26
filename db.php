@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-$baseHost = trim((string)(getenv('DB_HOST') ?: "127.0.0.1"));
-$port     = trim((string)(getenv('DB_PORT') ?: 3306));
-$user     = trim((string)(getenv('DB_USER') ?: "root"));
-$pass     = getenv('DB_PASS') !== false ? trim((string)getenv('DB_PASS')) : "";
-$db       = trim((string)(getenv('DB_NAME') ?: ""));
+$baseHost = trim((string)(getenv('DB_HOST') ?: getenv('MYSQL_ADDON_URI') ?: getenv('MYSQL_ADDON_HOST') ?: "127.0.0.1"));
+$port     = trim((string)(getenv('DB_PORT') ?: getenv('MYSQL_ADDON_PORT') ?: 3306));
+$user     = trim((string)(getenv('DB_USER') ?: getenv('MYSQL_ADDON_USER') ?: "root"));
+$pass     = getenv('DB_PASS') !== false ? trim((string)getenv('DB_PASS')) : (getenv('MYSQL_ADDON_PASSWORD') !== false ? trim((string)getenv('MYSQL_ADDON_PASSWORD')) : "");
+$db       = trim((string)(getenv('DB_NAME') ?: getenv('MYSQL_ADDON_DB') ?: ""));
 
 $host = $baseHost;
 
