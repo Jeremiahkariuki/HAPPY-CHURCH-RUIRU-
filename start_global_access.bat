@@ -1,19 +1,18 @@
 @echo off
+color 0B
 echo ========================================================
-echo   CHURCH EVENTS SYSTEM - GLOBAL ACCESS HELPER
+echo   HAPPY CHURCH RUIRU - SECURE CLOUD LINK GENERATOR
 echo ========================================================
 echo.
-echo To view your system from ANY mobile phone or laptop in the world:
+echo Please wait 5 seconds while we generate a secure domain...
 echo.
-echo 1. Ensure XAMPP (Apache and MySQL) is running.
-echo 2. Ensure you have Ngrok installed and in your PATH.
+echo  *** INSTRUCTIONS ***
+echo 1. Look carefully at the big green text that appears below.
+echo 2. It will show a real web link (e.g. https://xxxxxx.pinggy.link)
+echo 3. Copy or type THAT EXACT LINK into your mobile phone browser!
+echo 4. Append /church_events_system/ to the end of the link.
 echo.
-echo Attempting to start the tunnel...
+echo You can even scan the QR code that appears with your phone's camera!
 echo.
-ngrok http 80
-echo.
-if %errorlevel% neq 0 (
-    echo [ERROR] Ngrok was not found. Please download it from ngrok.com
-    echo and place it in your XAMPP folder or add it to your System PATH.
-)
+ssh -p 443 -R0:localhost:80 -o StrictHostKeyChecking=no a.pinggy.io
 pause
