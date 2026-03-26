@@ -1,11 +1,18 @@
 <?php
 declare(strict_types=1);
 
-$baseHost = trim((string)(getenv('DB_HOST') ?: getenv('MYSQL_ADDON_URI') ?: getenv('MYSQL_ADDON_HOST') ?: "mysql://uvyjfieb0nz3gjns:ghlaCM5lBu9AdIqiljwv@blwa0wvl7pnkpndupnsv-mysql.services.clever-cloud.com:3306/blwa0wvl7pnkpndupnsv"));
+/* ENVIRONMENT DETECTION: Decide whether to use XAMPP Local or Clever Cloud */
+$is_live = (isset($_SERVER['RENDER']) || getenv('RENDER') !== false || (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'onrender.com') !== false));
+
+$default_host = $is_live 
+    ? "mysql://uvyjfieb0nz3gjns:ghlaCM5lBu9AdIqiljwv@blwa0wvl7pnkpndupnsv-mysql.services.clever-cloud.com:3306/blwa0wvl7pnkpndupnsv" 
+    : "127.0.0.1";
+
+$baseHost = trim((string)(getenv('DB_HOST') ?: getenv('MYSQL_ADDON_URI') ?: getenv('MYSQL_ADDON_HOST') ?: $default_host));
 $port     = trim((string)(getenv('DB_PORT') ?: getenv('MYSQL_ADDON_PORT') ?: 3306));
-$user     = trim((string)(getenv('DB_USER') ?: getenv('MYSQL_ADDON_USER') ?: "root"));
-$pass     = (getenv('DB_PASS') !== false) ? trim((string)getenv('DB_PASS')) : ((getenv('MYSQL_ADDON_PASSWORD') !== false) ? trim((string)getenv('MYSQL_ADDON_PASSWORD')) : "");
-$db       = trim((string)(getenv('DB_NAME') ?: getenv('MYSQL_ADDON_DB') ?: ""));
+$user     = trim((string)(getenv('DB_USER') ?: getenv('MYSQL_ADDON_USER') ?: ($is_live ? "uvyjfieb0nz3gjns" : "root")));
+$pass     = (getenv('DB_PASS') !== false) ? trim((string)getenv('DB_PASS')) : ((getenv('MYSQL_ADDON_PASSWORD') !== false) ? trim((string)getenv('MYSQL_ADDON_PASSWORD')) : ($is_live ? "ghlaCM5lBu9AdIqiljwv" : ""));
+$db       = trim((string)(getenv('DB_NAME') ?: getenv('MYSQL_ADDON_DB') ?: ($is_live ? "blwa0wvl7pnkpndupnsv" : "church_events_system")));
 
 $host = $baseHost;
 
