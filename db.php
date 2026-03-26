@@ -33,7 +33,11 @@ try {
 
 } catch (PDOException $e) {
     // If DB fails, it means MySQL is likely OFF or credentials are wrong
-    $error = "Database connection failed. If you are running locally, <strong>please start MySQL in your XAMPP Control Panel</strong>. If on Render, verify your environment variables.";
-    error_log("DB Connection Error: " . $e->getMessage()); // Log the error for debugging
-    $pdo = null; // Ensure $pdo is null if connection fails
+    $isRender = isset($_SERVER['RENDER']) || getenv('RENDER');
+    $error = $isRender 
+        ? "<strong>Cloud Database Not Connected.</strong> Please ensure you have added your Aiven credentials (DB_HOST, DB_USER, etc.) to the <strong>Render Environment</strong> tab."
+        : "<strong>Database connection failed.</strong> Please start MySQL in your <strong>XAMPP Control Panel</strong>.";
+    
+    error_log("DB Connection Error: " . $e->getMessage());
+    $pdo = null;
 }
