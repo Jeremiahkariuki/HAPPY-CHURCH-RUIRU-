@@ -77,6 +77,8 @@ $todayCount    = (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM events WHERE ev
 $completedCount= (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM events WHERE status = 'Completed'")->fetchColumn() ?: 0) : 0);
 // Functional Attendance Rate: (Attended / Total Registered) for COMPLETED events only
 try {
+    $totalRegisteredForCompleted = 0;
+    $totalAttendedForCompleted = 0;
     $completedEventIds = $pdo->query("SELECT id FROM events WHERE status = 'Completed'")->fetchAll(PDO::FETCH_COLUMN);
     if (!empty($completedEventIds)) {
         $placeholders = implode(',', array_fill(0, count($completedEventIds), '?'));
