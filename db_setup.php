@@ -1,16 +1,9 @@
-<?php
-$host = getenv('DB_HOST') ?: "127.0.0.1";
-$user = getenv('DB_USER') ?: "root";
-$pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : "";
+require_once __DIR__ . '/db.php';
 
 try {
-  $pdo = new PDO("mysql:host=$host", $user, $pass);
-  $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-  
-  $db_name = getenv('DB_NAME') ?: "church_events_system";
-  $pdo->exec("CREATE DATABASE IF NOT EXISTS `$db_name` ");
-  $pdo->exec("USE `$db_name` ");
-
+  if (!$pdo) {
+      throw new Exception("Database connection not established. Check your credentials.");
+  }
   
   $sql = "
   CREATE TABLE IF NOT EXISTS `users` (
