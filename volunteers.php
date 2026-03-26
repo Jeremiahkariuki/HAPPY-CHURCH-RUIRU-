@@ -67,7 +67,32 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   } else {
     $stmt = $pdo->prepare("INSERT INTO volunteers (full_name, phone, email, event_id, ministry, availability, notes) VALUES (?,?,?,?,?,?,?)");
     $stmt->execute([$full_name, $phone ?: null, $email ?: null, $event_id, $ministry, $availability, $notes]);
-    flash_set("Volunteer added.");
+    
+    // Auto-Notification: Send confirmation email if email is provided
+    if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $eventTitle = "General Ministry";
+        if ($event_id > 0) {
+            $eStmt = $pdo->prepare("SELECT title, event_date, location FROM events WHERE id=?");
+            $eStmt->execute([$event_id]);
+            $evData = $eStmt->fetch();
+            if ($evData) {
+                $eventTitle = $evData["title"] . " (" . format_date($evData["event_date"]) . ")";
+            }
+        }
+        
+        $subj = "Volunteer Registration Successful - HAPPY CHURCH RUIRU";
+        $msg = "Dear <strong>$full_name</strong>,<br><br>" .
+               "Thank you for registering to serve as a volunteer at <strong>HAPPY CHURCH RUIRU</strong>!<br><br>" .
+               "<strong>Serving Area:</strong> $ministry<br>" .
+               "<strong>Event/Assignment:</strong> $eventTitle<br>" .
+               "<strong>Availability:</strong> $availability<br><br>" .
+               "We are excited to have you on the team. God bless you as you serve!";
+        
+        send_church_email($email, $subj, $msg);
+    }
+
+    flash_set("Volunteer added successfully! " . ($email ? "A confirmation has been sent to " . e($email) : ""));
+
   }
 
   redirect("volunteers.php");
@@ -181,9 +206,9 @@ require_once __DIR__ . "/header.php";
       <div class="card">
         <div style="font-weight:950; font-size:1.4rem;">
           <?php if (!$isAdmin): ?>
-            Volunteer Registration
+            Volunteers
           <?php else: ?>
-            Edit Volunteer
+            Volunteers
           <?php endif; ?>
         </div>
         <div class="small" style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px;">
@@ -376,7 +401,7 @@ require_once __DIR__ . "/header.php";
           <table class="table">
             <thead>
               <tr>
-                <th>Name</th><th>Ministry</th><th>Phone / Email</th><th>Event</th><th>Availability</th>
+                <th>Name</th><th>Ministry</th><th>Phone / Email</th><th>Event</th><th class="hide-mobile">Availability</th>
                 <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
                   <th>Actions</th>
                 <?php endif; ?>

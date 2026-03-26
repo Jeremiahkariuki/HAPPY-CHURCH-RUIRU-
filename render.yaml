@@ -3,8 +3,8 @@ services:
     name: happy-church-ruiru
     env: docker
     plan: free
-    branch: main
-    healthCheckPath: /
+    branch: feature/final-ui-refinements
+    healthCheckPath: /health.php
     envVars:
       - key: DB_HOST
         sync: false

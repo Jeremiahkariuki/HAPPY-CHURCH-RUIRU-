@@ -27,57 +27,73 @@ $today = date("Y-m-d");
 $dbErr = false;
 
 try {
-    $eventsMonthly = $pdo->query("
+    $eventsMonthly = $pdo ? $pdo->query("
       SELECT DATE_FORMAT(event_date, '%Y-%m') AS ym, COUNT(*) AS c
       FROM events
       WHERE event_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
       GROUP BY ym ORDER BY ym ASC
-    ")->fetchAll(PDO::FETCH_ASSOC);
+    ")->fetchAll(PDO::FETCH_ASSOC) : [];
 } catch (Exception $e) { $eventsMonthly = []; $dbErr = true; }
 
 $monthLabels = []; $monthCounts = [];
 foreach ($eventsMonthly as $r) { $monthLabels[] = (string)$r["ym"]; $monthCounts[] = (int)$r["c"]; }
 
 try {
-    $attStatus = $pdo->query("SELECT attendance_status AS s, COUNT(*) AS c FROM attendees GROUP BY attendance_status ORDER BY c DESC")->fetchAll(PDO::FETCH_ASSOC);
+    $attStatus = $pdo ? $pdo->query("SELECT attendance_status AS s, COUNT(*) AS c FROM attendees GROUP BY attendance_status ORDER BY c DESC")->fetchAll(PDO::FETCH_ASSOC) : [];
 } catch (Exception $e) { $attStatus = []; $dbErr = true; }
 
 $attLabels = []; $attCounts = [];
 foreach ($attStatus as $r) { $attLabels[] = (string)($r["s"] ?: "Unknown"); $attCounts[] = (int)$r["c"]; }
 
 try {
-    $eventsDaily30 = $pdo->query("
+    $eventsDaily30 = $pdo ? $pdo->query("
       SELECT DATE(event_date) AS d, COUNT(*) AS c FROM events
       WHERE event_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY d ORDER BY d ASC
-    ")->fetchAll(PDO::FETCH_ASSOC);
+    ")->fetchAll(PDO::FETCH_ASSOC) : [];
 } catch (Exception $e) { $eventsDaily30 = []; $dbErr = true; }
 
 $dailyLabels30 = []; $dailyCounts30 = [];
 foreach ($eventsDaily30 as $r) { $dailyLabels30[] = (string)$r["d"]; $dailyCounts30[] = (int)$r["c"]; }
 
 try {
-    $volsByMinistry = $pdo->query("SELECT COALESCE(NULLIF(ministry,''),'Unknown') AS m, COUNT(*) AS c FROM volunteers GROUP BY m ORDER BY c DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC);
+    $volsByMinistry = $pdo ? $pdo->query("SELECT COALESCE(NULLIF(ministry,''),'Unknown') AS m, COUNT(*) AS c FROM volunteers GROUP BY m ORDER BY c DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC) : [];
 } catch (Exception $e) { $volsByMinistry = []; $dbErr = true; }
 
 $volsMinistryLabels = []; $volsMinistryCounts = [];
 foreach ($volsByMinistry as $r) { $volsMinistryLabels[] = (string)$r["m"]; $volsMinistryCounts[] = (int)$r["c"]; }
 
 try {
-    $attsByEvent = $pdo->query("SELECT COALESCE(e.title,'(No Event)') AS t, COUNT(*) AS c FROM attendees a LEFT JOIN events e ON e.id=a.event_id GROUP BY t ORDER BY c DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC);
+    $attsByEvent = $pdo ? $pdo->query("SELECT COALESCE(e.title,'(No Event)') AS t, COUNT(*) AS c FROM attendees a LEFT JOIN events e ON e.id=a.event_id GROUP BY t ORDER BY c DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC) : [];
 } catch (Exception $e) { $attsByEvent = []; $dbErr = true; }
 
 $attsEventLabels = []; $attsEventCounts = [];
 foreach ($attsByEvent as $r) { $attsEventLabels[] = (string)$r["t"]; $attsEventCounts[] = (int)$r["c"]; }
 
-$eventsCount   = (int)($pdo->query("SELECT COUNT(*) FROM events")->fetchColumn() ?: 0);
-$volsCount     = (int)($pdo->query("SELECT COUNT(*) FROM volunteers")->fetchColumn() ?: 0);
-$attsCount     = (int)($pdo->query("SELECT COUNT(*) FROM attendees")->fetchColumn() ?: 0);
-$upcomingCount = (int)($pdo->query("SELECT COUNT(*) FROM events WHERE event_date >= CURDATE()")->fetchColumn() ?: 0);
-$todayCount    = (int)($pdo->query("SELECT COUNT(*) FROM events WHERE event_date = CURDATE()")->fetchColumn() ?: 0);
-$completedCount= (int)($pdo->query("SELECT COUNT(*) FROM events WHERE status = 'Completed'")->fetchColumn() ?: 0);
-$attendedCount = (int)($pdo->query("SELECT COUNT(*) FROM attendees WHERE attendance_status='Attended'")->fetchColumn() ?: 0);
-$cancelledAtt  = (int)($pdo->query("SELECT COUNT(*) FROM attendees WHERE attendance_status='Cancelled'")->fetchColumn() ?: 0);
-$attRate = ($attsCount > 0) ? round(($attendedCount / max(1, $attsCount - $cancelledAtt)) * 100, 1) : 0.0;
+$eventsCount   = (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM events")->fetchColumn() ?: 0) : 0);
+$volsCount     = (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM volunteers")->fetchColumn() ?: 0) : 0);
+$attsCount     = (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM attendees")->fetchColumn() ?: 0) : 0);
+$upcomingCount = (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM events WHERE event_date >= CURDATE()")->fetchColumn() ?: 0) : 0);
+$todayCount    = (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM events WHERE event_date = CURDATE()")->fetchColumn() ?: 0) : 0);
+$completedCount= (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM events WHERE status = 'Completed'")->fetchColumn() ?: 0) : 0);
+// Functional Attendance Rate: (Attended / Total Registered) for COMPLETED events only
+try {
+    $completedEventIds = $pdo->query("SELECT id FROM events WHERE status = 'Completed'")->fetchAll(PDO::FETCH_COLUMN);
+    if (!empty($completedEventIds)) {
+        $placeholders = implode(',', array_fill(0, count($completedEventIds), '?'));
+        $stmtRegistered = $pdo->prepare("SELECT COUNT(*) FROM attendees WHERE event_id IN ($placeholders) AND attendance_status != 'Cancelled'");
+        $stmtRegistered->execute($completedEventIds);
+        $totalRegisteredForCompleted = (int)$stmtRegistered->fetchColumn();
+
+        $stmtAttended = $pdo->prepare("SELECT COUNT(*) FROM attendees WHERE event_id IN ($placeholders) AND attendance_status = 'Attended'");
+        $stmtAttended->execute($completedEventIds);
+        $totalAttendedForCompleted = (int)$stmtAttended->fetchColumn();
+
+        $attRate = ($totalRegisteredForCompleted > 0) ? round(($totalAttendedForCompleted / $totalRegisteredForCompleted) * 100, 1) : 100.0;
+    } else {
+        // If no events are completed, we show 100% or "N/A" - let's go with 100% as a positive baseline
+        $attRate = 100.0;
+    }
+} catch (Exception $e) { $attRate = 0.0; }
 
 /* ==========================
    EVENTS CRUD
@@ -213,7 +229,7 @@ require_once __DIR__ . "/header.php";
   <div class="miniGrid">
     <div class="mini"><div class="k">📅 Upcoming Events</div><div class="s">From today onwards</div><div class="t"><?= $upcomingCount ?></div></div>
     <div class="mini"><div class="k">🗓️ Today's Events</div><div class="s"><?= e2($today) ?></div><div class="t"><?= $todayCount ?></div></div>
-    <div class="mini"><div class="k">✅ Attendance Rate</div><div class="s">Attended / Total</div><div class="t"><?= $attRate ?>%</div></div>
+    <div class="mini"><div class="k">✅ Attendance Rate</div><div class="s"><?= $totalRegisteredForCompleted > 0 ? "Based on $completedCount events" : "No events completed yet" ?></div><div class="t"><?= $totalRegisteredForCompleted > 0 ? $attRate . "%" : "---" ?></div></div>
     <div class="mini"><div class="k">🏁 Completed Events</div><div class="s">Finished programs</div><div class="t"><?= $completedCount ?></div></div>
   </div>
 </div>
@@ -258,7 +274,15 @@ require_once __DIR__ . "/header.php";
         </div>
         <div class="tag">Analytics</div>
       </div>
-      <div class="canvasWrap"><canvas id="eventsLine"></canvas></div>
+      <div class="canvasWrap">
+        <?php if (empty($monthLabels) && empty($dailyLabels30)): ?>
+          <div style="height:100%; display:grid; place-items:center; opacity:0.5; text-align:center;">
+             <div><div style="font-size:2rem; margin-bottom:10px;">📉</div><div class="small">No event data to plot yet.</div></div>
+          </div>
+        <?php else: ?>
+          <canvas id="eventsLine"></canvas>
+        <?php endif; ?>
+      </div>
     </div>
   </div>
   <div class="col-4">
@@ -267,7 +291,15 @@ require_once __DIR__ . "/header.php";
         <div><div class="chartTitle">Attendance Status</div><div class="chartSub">Distribution overview</div></div>
         <div class="tag">Live</div>
       </div>
-      <div class="canvasWrap"><canvas id="attendancePie"></canvas></div>
+      <div class="canvasWrap">
+        <?php if (empty($attLabels)): ?>
+          <div style="height:100%; display:grid; place-items:center; opacity:0.5; text-align:center;">
+             <div><div style="font-size:2rem; margin-bottom:10px;">📊</div><div class="small">Waiting for participants.</div></div>
+          </div>
+        <?php else: ?>
+          <canvas id="attendancePie"></canvas>
+        <?php endif; ?>
+      </div>
     </div>
   </div>
 

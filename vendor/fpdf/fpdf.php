@@ -103,7 +103,7 @@ function __construct($orientation='P', $unit='mm', $size='A4')
 	$this->iconv = function_exists('iconv');
 	// Font path
 	if(defined('FPDF_FONTPATH'))
-		$this->fontpath = FPDF_FONTPATH;
+		$this->fontpath = constant('FPDF_FONTPATH');
 	else
 		$this->fontpath = dirname(__FILE__).'/font/';
 	// Core fonts
@@ -1135,9 +1135,13 @@ protected function _loadfont($path)
 {
 	// Load a font definition file
 	include($path);
-	if(!isset($name))
+	/** @var string|null $name */
+	$name = isset($name) ? $name : null;
+	if(!$name)
 		$this->Error('Could not include font definition file: '.$path);
-	if(isset($enc))
+	/** @var string|null $enc */
+	$enc = isset($enc) ? $enc : null;
+	if($enc)
 		$enc = strtolower($enc);
 	if(!isset($subsetted))
 		$subsetted = false;

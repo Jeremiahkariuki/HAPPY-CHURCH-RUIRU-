@@ -12,8 +12,10 @@
 
 define('MAIL_HOST', getenv('MAIL_HOST') ?: 'smtp.gmail.com');
 define('MAIL_PORT', getenv('MAIL_PORT') ?: 587);
-define('MAIL_USERNAME', getenv('MAIL_USERNAME') ?: 'simonnjoro965@gmail.com'); 
-define('MAIL_PASSWORD', getenv('MAIL_PASSWORD') ?: '123456789'); 
+define('MAIL_USERNAME', getenv('MAIL_USERNAME') ?: 'simonnjoro965@gmail.com');
+
+define('MAIL_PASSWORD', getenv('MAIL_PASSWORD') ?: 'Sy.123456789.');
+
 define('MAIL_FROM_NAME', getenv('MAIL_FROM_NAME') ?: 'HAPPY CHURCH RUIRU');
 define('MAIL_ENCRYPTION', getenv('MAIL_ENCRYPTION') ?: 'tls');
 

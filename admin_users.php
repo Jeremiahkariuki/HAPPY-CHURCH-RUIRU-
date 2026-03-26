@@ -42,59 +42,72 @@ $users_list = $pdo->query("SELECT id, username, email, role, status, created_at 
 require_once __DIR__ . "/header.php";
 ?>
 
-<div class="hero">
-  <h1 class="heroTitle">User Management</h1>
-  <div class="heroSub">Approve or Reject new account requests</div>
+<div style="margin-bottom: 20px;">
+  <a class="btn btn-ghost" href="dashboard.php">← Back to Dashboard</a>
 </div>
 
-<?php if ($message): ?>
-    <div class="flash <?= $type ?>"><?= e($message) ?></div>
-<?php endif; ?>
-
-<div class="card" style="margin-top:20px;">
-    <div style="overflow-x:auto;">
-        <table style="width:100%; border-collapse: collapse;">
-            <thead>
-                <tr style="text-align:left; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                    <th style="padding:12px;">Username</th>
-                    <th style="padding:12px;">Email</th>
-                    <th style="padding:12px;">Role</th>
-                    <th style="padding:12px;">Status</th>
-                    <th style="padding:12px;">Requested At</th>
-                    <th style="padding:12px;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (empty($users_list)): ?>
-                    <tr><td colspan="5" style="padding:20px; text-align:center; color:var(--muted);">No users found.</td></tr>
-                <?php endif; ?>
-                <?php foreach ($users_list as $u): ?>
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                        <td style="padding:12px; font-weight:800;"><?= e($u["username"]) ?></td>
-                        <td style="padding:12px; font-size:0.85rem; opacity:0.8;"><?= e($u["email"] ?? "-") ?></td>
-                        <td style="padding:12px;"><span class="tag"><?= e($u["role"]) ?></span></td>
-                        <td style="padding:12px;">
-                            <?php 
-                                $status_class = "pending";
-                                if ($u["status"] === "Approved") $status_class = "success";
-                                if ($u["status"] === "Rejected") $status_class = "error";
-                            ?>
-                            <span class="tag <?= $status_class ?>" style="opacity:0.9;"><?= e($u["status"]) ?></span>
-                        </td>
-                        <td style="padding:12px; font-size:0.85rem; color:var(--muted);"><?= e($u["created_at"]) ?></td>
-                        <td style="padding:12px; display:flex; gap:8px;">
-                            <?php if ($u["status"] === "Pending"): ?>
-                                <a href="admin_users.php?action=approve&id=<?= $u["id"] ?>" class="btn" style="padding:4px 10px; font-size:0.75rem;">Approve</a>
-                                <a href="admin_users.php?action=reject&id=<?= $u["id"] ?>" class="btn btn-ghost" style="padding:4px 10px; font-size:0.75rem; color:#ff4d6d;">Reject</a>
-                            <?php else: ?>
-                                <a href="admin_users.php?action=delete&id=<?= $u["id"] ?>" class="btn btn-ghost" style="padding:4px 10px; font-size:0.75rem; color:#ff4d6d;" onclick="return confirm('Relly delete this user?')">Delete</a>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+<div class="grid">
+  <div class="col-12">
+    <div class="card" style="background: linear-gradient(135deg, rgba(124,92,255,.12), rgba(46,233,166,.06));">
+      <div style="font-weight:950; font-size:1.6rem;">User Management</div>
+      <div class="small">Review, Approve, or Reject new membership and staff account requests.</div>
     </div>
+  </div>
+
+  <?php if ($message): ?>
+      <div class="col-12"><div class="flash <?= $type ?>"><?= e($message) ?></div></div>
+  <?php endif; ?>
+
+  <div class="col-12">
+    <div class="card">
+      <div style="overflow-x:auto;">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>User Details</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th class="hide-mobile">Requested</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php if (empty($users_list)): ?>
+              <tr><td colspan="5" style="text-align:center; padding:60px; color:var(--muted);">No users currently in the system.</td></tr>
+            <?php endif; ?>
+            <?php foreach ($users_list as $u): ?>
+              <tr>
+                <td>
+                  <div style="font-weight:850; font-size:1.05rem;"><?= e($u["username"]) ?></div>
+                  <div class="small" style="opacity:0.7;"><?= e($u["email"] ?: "No email provided") ?></div>
+                </td>
+                <td><span class="pill" style="font-size:0.75rem; margin:0;"><?= e($u["role"]) ?></span></td>
+                <td>
+                  <?php 
+                    $color = ["Pending"=>"var(--brand)", "Approved"=>"var(--brand2)", "Rejected"=>"var(--danger)"][$u["status"]] ?? "var(--text)";
+                  ?>
+                  <span style="color:<?= $color ?>; font-weight:850; font-size:0.85rem;">● <?= e($u["status"]) ?></span>
+                </td>
+                <td class="hide-mobile small" style="opacity:0.7;">
+                  <?= e(format_date($u["created_at"])) ?>
+                </td>
+                <td class="actions">
+                  <?php if ($u["status"] === "Pending"): ?>
+                    <a href="admin_users.php?action=approve&id=<?= $u["id"] ?>" class="btn" style="padding:6px 14px; font-size:0.8rem;">Approve</a>
+                    <a href="admin_users.php?action=reject&id=<?= $u["id"] ?>" class="btn btn-ghost" style="padding:6px 14px; font-size:0.8rem; color:var(--danger);" onclick="return confirm('Reject this user?')">Reject</a>
+                  <?php elseif ($u["role"] !== "admin"): ?>
+                    <a href="admin_users.php?action=delete&id=<?= $u["id"] ?>" class="btn btn-ghost" style="padding:6px 14px; font-size:0.8rem; opacity:0.6;" onclick="return confirm('Permanently delete this user?')">Delete</a>
+                  <?php else: ?>
+                    <span class="small" style="opacity:0.5;">System Admin</span>
+                  <?php endif; ?>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
 
 <?php require_once __DIR__ . "/footer.php"; ?>

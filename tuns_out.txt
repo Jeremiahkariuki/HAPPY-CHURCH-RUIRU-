@@ -1,0 +1,2 @@
+Pseudo-terminal will not be allocated because stdin is not a terminal.
+ssh: connect to host tuns.sh port 2222: Connection timed out

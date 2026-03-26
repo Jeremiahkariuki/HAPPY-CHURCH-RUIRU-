@@ -4,6 +4,9 @@ require_once __DIR__ . "/db.php";
 require_once __DIR__ . "/helpers.php";
 
 $error = "";
+if (!isset($pdo) || $pdo === null) {
+    $error = isset($db_connect_error) ? $db_connect_error : "Database connection unavailable. Please ensure MySQL is running.";
+}
 $success = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
@@ -19,6 +22,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $error = "Passwords do not match.";
     } elseif (strlen($password) < 6) {
         $error = "Password must be at least 6 characters.";
+    } elseif (!$pdo) {
+        $error = "Database connection unavailable. Please start MySQL in XAMPP.";
     } else {
         try {
             $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");
@@ -26,7 +31,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             if ($stmt->fetch()) {
                 $error = "Username already taken.";
             } else {
-                // Self-healing: Ensure email column exists
+                $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+                $stmt->execute([$email]);
+                if ($stmt->fetch()) {
+                    $error = "This email address is already registered.";
+                } else {
+                    // Self-healing: Ensure email column exists
                 try {
                     $pdo->query("SELECT email FROM users LIMIT 1");
                 } catch (Exception $e) {
@@ -50,9 +60,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     }
                 }
                 $success = "Account created! Please wait for Admin approval before logging in.";
+                }
             }
         } catch (PDOException $e) {
-            $error = "Database error: " . $e->getMessage();
+            // Check specifically for duplicate entry (which happens instantly if a user double-taps on mobile)
+            if ($e->getCode() == 23000) {
+                if (stripos($e->getMessage(), 'email') !== false) {
+                    $error = "This email address is already registered.";
+                } elseif (stripos($e->getMessage(), 'username') !== false) {
+                    $error = "This username is already taken.";
+                } else {
+                    $error = "An account with these details already exists.";
+                }
+            } else {
+                $error = "Database error: " . $e->getMessage();
+            }
         }
     }
 }
@@ -85,14 +107,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <div style="margin-top:14px;"><a href="login.php" class="btn">Go to Login</a></div>
 <?php else: ?>
 
-<form method="post" style="margin-top:16px;display:grid;gap:12px;">
+<form method="post" style="margin-top:16px;display:grid;gap:12px;" onsubmit="this.querySelector('button').disabled = true; this.querySelector('button').innerText = 'Starting...';">
 <div>
 <label class="small">Username</label>
-<input class="input" name="username" placeholder="Choose a username" required value="<?= e($username ?? "") ?>">
+<input class="input" name="username" placeholder="Choose a username" required value="<?= e($username ?? "") ?>" autocorrect="off" autocapitalize="none">
 </div>
 <div>
 <label class="small">Email Address (Gmail preferred)</label>
-<input class="input" type="email" name="email" placeholder="email@gmail.com" required value="<?= e($email ?? "") ?>">
+<input class="input" type="email" name="email" placeholder="email@gmail.com" required value="<?= e($email ?? "") ?>" autocorrect="off" autocapitalize="none">
 </div>
 <div>
 <label class="small">Desired Role</label>

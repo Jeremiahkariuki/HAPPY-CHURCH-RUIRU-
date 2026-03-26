@@ -32,7 +32,26 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       } else {
           $stmtIns = $pdo->prepare("INSERT INTO attendees (full_name, email, event_id, attendance_status) VALUES (?, ?, ?, 'Registered')");
           $stmtIns->execute([$uName, $uEmail ?: null, $id]);
-          flash_set("Successfully registered for the event! " . ($uEmail ? "A confirmation will be sent to your email." : ""));
+          
+          // Auto-Notification: Send confirmation email
+          if ($uEmail && filter_var($uEmail, FILTER_VALIDATE_EMAIL)) {
+              $eStmt = $pdo->prepare("SELECT title, event_date, location FROM events WHERE id=?");
+              $eStmt->execute([$id]);
+              $ev = $eStmt->fetch();
+              
+              $subj = "Event Registration Confirmed: " . ($ev['title'] ?? 'Church Event');
+              $msg = "Dear <strong>$uName</strong>,<br><br>" .
+                     "You have successfully registered for the following event at <strong>HAPPY CHURCH RUIRU</strong>:<br><br>" .
+                     "📅 <strong>Event:</strong> " . e($ev['title'] ?? 'N/A') . "<br>" .
+                     "🗓️ <strong>Date:</strong> " . e(format_date($ev['event_date'] ?? '')) . "<br>" .
+                     "📍 <strong>Location:</strong> " . e($ev['location'] ?? 'Main Sanctuary') . "<br><br>" .
+                     "We look forward to seeing you there! God bless you.";
+              
+              send_church_email($uEmail, $subj, $msg);
+          }
+          
+          flash_set("Successfully registered for the event! " . ($uEmail ? "A confirmation has been sent to " . e($uEmail) : ""));
+
       }
       redirect("events.php");
   }
@@ -368,7 +387,7 @@ require_once __DIR__ . "/header.php";
           <table class="table">
             <thead>
               <tr>
-                <th>Date</th><th>Title</th><th>Location</th><th>Category</th><th>Status</th>
+                <th>Date</th><th>Title</th><th>Location</th><th class="hide-mobile">Category</th><th>Status</th>
                 <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
                   <th>Actions</th>
                 <?php else: ?>
@@ -385,7 +404,7 @@ require_once __DIR__ . "/header.php";
                     <div class="small" style="max-height:32px; overflow:hidden;"><?= e($r["description"] ?? "") ?></div>
                   </td>
                   <td><?= e($r["location"]) ?></td>
-                  <td><span class="pill" style="font-size:0.7rem; margin:0;"><?= e($r["category"]) ?></span></td>
+                   <td class="hide-mobile"><span class="pill" style="font-size:0.7rem; margin:0;"><?= e($r["category"]) ?></span></td>
                   <td>
                      <?php
                        $color = ["Scheduled"=>"var(--brand)", "Ongoing"=>"var(--brand2)", "Completed"=>"var(--muted)", "Cancelled"=>"var(--danger)"][$r["status"]] ?? "var(--text)";

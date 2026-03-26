@@ -102,6 +102,11 @@ require_once __DIR__ . "/header.php";
     border: 1px solid rgba(255,255,255,0.05);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
+    animation: itemFade 0.6s ease backwards;
+  }
+  @keyframes itemFade {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
   .gallery-item:hover {
     transform: translateY(-5px);
@@ -112,6 +117,7 @@ require_once __DIR__ . "/header.php";
     width: 100%;
     display: block;
     transition: transform 0.5s ease;
+    background: rgba(255,255,255,.05);
   }
   .gallery-item:hover img {
     transform: scale(1.05);

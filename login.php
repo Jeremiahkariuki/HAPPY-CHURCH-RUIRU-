@@ -53,7 +53,7 @@ if (!$db_error) {
     }
     ensure_admin($pdo);
 } else {
-    $error = "Database connection failed. <strong>Local users:</strong> start MySQL in XAMPP. <strong>Cloud users:</strong> verify environment variables.";
+    $error = isset($db_connect_error) ? $db_connect_error : "Database connection failed. Please check your credentials.";
 }
 
 /* Login process */
@@ -99,9 +99,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $error = "Invalid username or password.";
             }
         } catch (Exception $e) {
-            $error = "An error occurred during login. Please try again.";
+            $error = "An error occurred during login: " . e($e->getMessage());
         }
+    } else {
+        // Fallback or use the literal connection error if the form is submitted
+        $error = isset($db_connect_error) ? $db_connect_error : "Login unavailable: Database is not connected.";
     }
+
 }
 ?>
 
