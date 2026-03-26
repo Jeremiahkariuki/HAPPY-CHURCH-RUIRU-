@@ -3,18 +3,36 @@ declare(strict_types=1);
 
 $baseHost = getenv('DB_HOST') ?: "127.0.0.1";
 $port = getenv('DB_PORT') ?: 3306;
+$user = getenv('DB_USER') ?: "root";
+$pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : "";
+$db   = getenv('DB_NAME') ?: "";
 
-if (strpos($baseHost, ':') !== false) {
-    list($host, $p) = explode(':', $baseHost, 2);
-    $port = $p;
+// Robust parser: If user pasted a full Aiven connection URI (mysql://user:pass@host:port/db) inside DB_HOST
+if (strpos($baseHost, 'mysql://') === 0 || strpos($baseHost, 'mysql+ssl://') === 0) {
+    $parsed = parse_url($baseHost);
+    if ($parsed) {
+        $host = $parsed['host'] ?? "127.0.0.1";
+        $port = $parsed['port'] ?? $port;
+        $user = $parsed['user'] ?? $user;
+        $pass = $parsed['pass'] ?? $pass;
+        $db   = ltrim($parsed['path'] ?? "", '/') ?: $db;
+    } else {
+        $host = $baseHost;
+    }
 } else {
-    $host = $baseHost;
+    // If they just pasted "host:port"
+    if (strpos($baseHost, ':') !== false) {
+        list($host, $p) = explode(':', $baseHost, 2);
+        $port = $p;
+    } else {
+        $host = $baseHost;
+    }
 }
 
 $isLocal = in_array($host, ["127.0.0.1", "localhost"]);
-$db   = getenv('DB_NAME') ?: ($isLocal ? "church_events_system" : "defaultdb");
-$user = getenv('DB_USER') ?: "root";
-$pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : "";
+if (!$db) {
+    $db = $isLocal ? "church_events_system" : "defaultdb";
+}
 
 // 1. Try to connect to host first and create DB if it doesn't exist
 try {
