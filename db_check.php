@@ -17,7 +17,7 @@ $rawName = getenv('DB_NAME');
 
 require_once __DIR__ . '/db.php';
 
-echo "<h1>Database Connection Diagnostic</h1>";
+echo "<h1>Database Connection Diagnostic (v2.0 - Final Rescue)</h1>";
 echo "<table border='1' cellpadding='10' style='border-collapse:collapse;'>";
 echo "<tr><th>Parameter</th><th>Value (from Environment)</th></tr>";
 echo "<tr><td>DB_HOST (Raw)</td><td><code>" . htmlspecialchars((string)$rawHost) . "</code></td></tr>";
