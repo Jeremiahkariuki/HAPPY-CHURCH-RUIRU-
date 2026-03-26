@@ -169,6 +169,24 @@ try {
         try { $pdo->exec($m); } catch (Exception $e) {}
     }
 
+    // --- SEED GALLERY IF EMPTY ---
+    try {
+        $galleryCount = (int)($pdo->query("SELECT COUNT(*) FROM gallery")->fetchColumn() ?: 0);
+        if ($galleryCount === 0) {
+            $galleryImages = [
+                ['path' => 'uploads/gallery/08bd72b07820e59b.jpg', 'cap' => 'Community Gathering'],
+                ['path' => 'uploads/gallery/209efaa485ccced6.jpg', 'cap' => 'Sunday Service'],
+                ['path' => 'uploads/gallery/259de29104c49ed7.jpg', 'cap' => 'Youth Ministry'],
+                ['path' => 'uploads/gallery/9a9dc3d53c628f7b.jpg', 'cap' => 'Worship Team'],
+                ['path' => 'uploads/gallery/9d4b09ee6ecb70eb.jpg', 'cap' => 'Church Building'],
+                ['path' => 'uploads/gallery/a43f7a004e89bc17.jpg', 'cap' => 'Outreach Program'],
+            ];
+            foreach ($galleryImages as $img) {
+                $pdo->prepare("INSERT IGNORE INTO gallery (image_path, caption) VALUES (?, ?)")->execute([$img['path'], $img['cap']]);
+            }
+        }
+    } catch (Exception $e) {}
+
 } catch (PDOException $e) {
     // If DB fails, it means MySQL is likely OFF or credentials are wrong
     $isRender = isset($_SERVER['RENDER']) || getenv('RENDER');
