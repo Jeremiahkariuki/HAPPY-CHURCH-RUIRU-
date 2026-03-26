@@ -1,7 +1,14 @@
 <?php
 declare(strict_types=1);
 
-$host = getenv('DB_HOST') ?: "127.0.0.1";
+$baseHost = getenv('DB_HOST') ?: "127.0.0.1";
+$port = 3306;
+if (strpos($baseHost, ':') !== false) {
+    list($host, $port) = explode(':', $baseHost, 2);
+} else {
+    $host = $baseHost;
+}
+
 $isLocal = in_array($host, ["127.0.0.1", "localhost"]);
 $db   = getenv('DB_NAME') ?: ($isLocal ? "church_events_system" : "defaultdb");
 $user = getenv('DB_USER') ?: "root";
@@ -17,19 +24,19 @@ try {
     ];
 
     // If host is Cloud (not localhost), add SSL support for Aiven/Clever Cloud
-    if (!in_array($host, ["127.0.0.1", "localhost"])) {
+    if (!$isLocal) {
         $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false; // Trust the server cert
     }
     
     // 1. Try to connect to host first and create DB if it doesn't exist
-    $pdo = new PDO("mysql:host=$host", $user, $pass, $options);
+    $pdo = new PDO("mysql:host=$host;port=$port", $user, $pass, $options);
     
     // Only attempt to create DB if we are on localhost/127.0.0.1 or if DB_NAME is not explicitly set
-    if (in_array($host, ["127.0.0.1", "localhost"]) || !getenv('DB_NAME')) {
+    if ($isLocal || !getenv('DB_NAME')) {
         $pdo->exec("CREATE DATABASE IF NOT EXISTS `$db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
     }
     // Now connect to the specific database
-    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass, $options);
+    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4", $user, $pass, $options);
 
 } catch (PDOException $e) {
     // If DB fails, it means MySQL is likely OFF or credentials are wrong
