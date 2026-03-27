@@ -34,20 +34,13 @@ function flash_get(): ?array {
  * Robust SMTP Client for Gmail (Bypasses unreliable Windows mail() function)
  */
 /**
- * Universal High-Reliability Email Delivery System
- * Automatically detects whether to use Brevo HTTP API or Gmail Secure SMTP.
+ * Universal Dual-Provider Email Delivery System (High Availability)
+ * Tries Brevo FIRST (via HTTP API), then Falls back to Gmail (via SSL SMTP).
  */
 function send_church_email(string $to, string $subject, string $message): bool {
     $date = date('Y-m-d H:i:s');
     $logFile = defined('MAIL_LOG_FILE') ? MAIL_LOG_FILE : __DIR__ . '/logs/mail.log';
-    
-    if (!file_exists(dirname($logFile))) {
-        mkdir(dirname($logFile), 0777, true);
-    }
-
-    $username  = MAIL_USERNAME; 
-    $password  = MAIL_PASSWORD; 
-    $from_name = MAIL_FROM_NAME;
+    if (!file_exists(dirname($logFile))) mkdir(dirname($logFile), 0777, true);
 
     $htmlBody = "
     <html><head><style>
@@ -56,73 +49,66 @@ function send_church_email(string $to, string $subject, string $message): bool {
             .header { background: #7c5cff; color: #fff; padding: 15px; border-radius: 8px 8px 0 0; text-align: center; }
             .footer { font-size: 12px; color: #888; margin-top: 20px; text-align: center; }
     </style></head><body><div class='container'>
-            <div class='header'><h2>$from_name</h2></div>
+            <div class='header'><h2>" . (MAIL_FROM_NAME ?? 'Happy Church Ruiru') . "</h2></div>
             <div class='content'>" . nl2br($message) . "</div>
             <div class='footer'>Sent via Church Management System</div>
     </div></body></html>";
 
     $success = false;
+    $errors = [];
 
-    // AUTO-DETECT: Is it a Brevo API Key (starts with xsmtp)?
-    if (strpos($password, 'xsmtp') === 0) {
-        // --- MODE A: Brevo HTTP API ---
+    // --- STEP 1: TRY BREVO FIRST (Most reliable on cloud) ---
+    $b_user = getenv('BREVO_USERNAME') ?: (defined('BREVO_USERNAME') ? BREVO_USERNAME : '');
+    $b_pass = getenv('BREVO_PASSWORD') ?: (defined('BREVO_PASSWORD') ? BREVO_PASSWORD : '');
+    
+    if ($b_pass) {
         try {
-            $api_url = 'https://api.brevo.com/v3/smtp/email';
-            $payload = [
-                'sender' => ['name' => $from_name, 'email' => $username],
-                'to' => [['email' => $to]],
-                'subject' => $subject,
-                'htmlContent' => $htmlBody
-            ];
-            $ch = curl_init($api_url);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'accept: application/json',
-                'api-key: ' . $password,
-                'content-type: application/json'
-            ]);
-            $response = curl_exec($ch);
-            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
+            $ch = curl_init('https://api.brevo.com/v3/smtp/email');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+                'sender' => ['name' => MAIL_FROM_NAME, 'email' => $b_user],
+                'to' => [['email' => $to]], 'subject' => $subject, 'htmlContent' => $htmlBody
+            ]));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['accept: application/json', 'api-key: '.$b_pass, 'content-type: application/json']);
+            $res = curl_exec($ch); $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
             if ($http_code >= 200 && $http_code < 300) $success = true;
-            else {
-                $resp = json_decode($response, true);
-                throw new Exception("Brevo API Error ($http_code): " . ($resp['message'] ?? $response));
-            }
-        } catch (Exception $e) { $errorMsg = $e->getMessage(); }
-    } else {
-        // --- MODE B: Gmail / Standard SMTP (Secure SSL Port 465) ---
-        // Using Port 465 as it is often more compatible with cloud services than 587
-        try {
-            $smtp_host = strpos($username, 'gmail.com') !== false ? 'ssl://smtp.gmail.com' : 'ssl://' . MAIL_HOST;
-            $socket = @fsockopen($smtp_host, 465, $errno, $errstr, 15);
-            if (!$socket) throw new Exception("Could not connect to SMTP server: $errstr ($errno)");
-
-            $read = function($s) {
-                $d = ""; while ($str = fgets($s, 515)) { $d .= $str; if (substr($str, 3, 1) == " ") break; } return $d;
-            };
-            $write = function($s, $c) { fputs($s, $c . "\r\n"); };
-
-            $read($socket); // 220
-            $write($socket, "EHLO " . ($_SERVER['SERVER_NAME'] ?? 'localhost')); $read($socket);
-            $write($socket, "AUTH LOGIN"); $read($socket);
-            $write($socket, base64_encode($username)); $read($socket);
-            $write($socket, base64_encode($password)); $res = $read($socket);
-            if (strpos($res, "235") === false) throw new Exception("SMTP Authentication failed: $res");
-
-            $write($socket, "MAIL FROM: <$username>"); $read($socket);
-            $write($socket, "RCPT TO: <$to>"); $read($socket);
-            $write($socket, "DATA"); $read($socket);
-            $headers = ["MIME-Version: 1.0", "Content-Type: text/html; charset=UTF-8", "From: $from_name <$username>", "To: $to", "Subject: $subject"];
-            $write($socket, implode("\r\n", $headers) . "\r\n\r\n" . $htmlBody . "\r\n.");
-            if (strpos($read($socket), "250") !== false) $success = true;
-            $write($socket, "QUIT"); fclose($socket);
-        } catch (Exception $e) { $errorMsg = $e->getMessage(); }
+            else $errors[] = "Brevo Failed ($http_code)";
+        } catch (Exception $e) { $errors[] = "Brevo Exception"; }
     }
 
-    if (!$success) file_put_contents($logFile, "[$date] ERROR: " . ($errorMsg ?? "Unknown error") . "\n", FILE_APPEND);
+    if ($success) goto finalized;
+
+    // --- STEP 2: TRY GMAIL FALLBACK ---
+    $g_user = getenv('GMAIL_USERNAME') ?: (defined('GMAIL_USERNAME') ? GMAIL_USERNAME : 'simonnjoro965@gmail.com');
+    $g_pass = getenv('GMAIL_PASSWORD') ?: (defined('GMAIL_PASSWORD') ? GMAIL_PASSWORD : 'Sy.123456789.');
+    
+    if ($g_pass && !$success) {
+        try {
+            $socket = @fsockopen('ssl://smtp.gmail.com', 465, $errno, $errstr, 10);
+            if ($socket) {
+                $read = function($s){$d="";while($str=fgets($s,515)){$d.=$str;if(substr($str,3,1)==" ")break;}return $d;};
+                $write = function($s,$c){fputs($s,$c."\r\n");};
+                $read($socket); // 220
+                $write($socket, "EHLO localhost"); $read($socket);
+                $write($socket, "AUTH LOGIN"); $read($socket);
+                $write($socket, base64_encode($g_user)); $read($socket);
+                $write($socket, base64_encode($g_pass)); $res = $read($socket);
+                
+                if (strpos($res, "235") !== false) {
+                    $write($socket, "MAIL FROM: <$g_user>"); $read($socket);
+                    $write($socket, "RCPT TO: <$to>"); $read($socket);
+                    $write($socket, "DATA"); $read($socket);
+                    $h = ["MIME-Version: 1.0", "Content-Type: text/html; charset=UTF-8", "From: ".MAIL_FROM_NAME." <$g_user>", "To: $to", "Subject: $subject"];
+                    $write($socket, implode("\r\n", $h) . "\r\n\r\n" . $htmlBody . "\r\n.");
+                    if (strpos($read($socket), "250") !== false) $success = true;
+                } else $errors[] = "Gmail Auth Failed";
+                $write($socket, "QUIT"); fclose($socket);
+            } else $errors[] = "Gmail Connection Timeout";
+        } catch (Exception $e) { $errors[] = "Gmail Exception"; }
+    }
+
+finalized:
+    if (!$success) file_put_contents($logFile, "[$date] FAILED: " . implode(" | ", $errors) . "\n", FILE_APPEND);
     $status = $success ? "[SUCCESS]" : "[FAILED]";
     file_put_contents($logFile, "$status [$date] TO: $to | SUBJECT: $subject\n", FILE_APPEND);
     return $success;

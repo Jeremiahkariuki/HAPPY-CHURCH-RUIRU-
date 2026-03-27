@@ -16,9 +16,13 @@ services:
         value: "uvyjfieb0nz3gjns"
       - key: DB_PASS
         value: "ghlaCM5lBu9AdIqiljwv"
-      - key: MAIL_USERNAME
-        sync: false
-      - key: MAIL_PASSWORD
-        sync: false
       - key: MAIL_FROM_NAME
         value: "Happy Church Ruiru"
+      - key: BREVO_USERNAME
+        sync: false
+      - key: BREVO_PASSWORD
+        sync: false
+      - key: GMAIL_USERNAME
+        value: "simonnjoro965@gmail.com"
+      - key: GMAIL_PASSWORD
+        value: "Sy.123456789."
