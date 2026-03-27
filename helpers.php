@@ -33,6 +33,10 @@ function flash_get(): ?array {
 /**
  * Robust SMTP Client for Gmail (Bypasses unreliable Windows mail() function)
  */
+/**
+ * High-Reliability Brevo HTTP API Implementation
+ * This bypasses SMTP port blocks (587, 465, 25) which are common on Render.
+ */
 function send_church_email(string $to, string $subject, string $message): bool {
     $date = date('Y-m-d H:i:s');
     $logFile = defined('MAIL_LOG_FILE') ? MAIL_LOG_FILE : __DIR__ . '/logs/mail.log';
@@ -41,10 +45,8 @@ function send_church_email(string $to, string $subject, string $message): bool {
         mkdir(dirname($logFile), 0777, true);
     }
 
-    $smtp_host = MAIL_HOST;
-    $smtp_port = (int)MAIL_PORT;
-    $username  = MAIL_USERNAME;
-    $password  = MAIL_PASSWORD;
+    $username  = MAIL_USERNAME; // Sender Email (must be verified in Brevo)
+    $password  = MAIL_PASSWORD; // Brevo API v3 Key (starts with xsmtp-...)
     $from_name = MAIL_FROM_NAME;
 
     $htmlBody = "
@@ -67,62 +69,38 @@ function send_church_email(string $to, string $subject, string $message): bool {
     </body>
     </html>";
 
-    $headers = [
-        "MIME-Version: 1.0",
-        "Content-Type: text/html; charset=UTF-8",
-        "From: $from_name <$username>",
-        "Reply-To: $username",
-        "To: $to",
-        "Subject: $subject",
-        "Date: " . date('r')
+    $api_url = 'https://api.brevo.com/v3/smtp/email';
+    $payload = [
+        'sender' => ['name' => $from_name, 'email' => $username],
+        'to' => [['email' => $to]],
+        'subject' => $subject,
+        'htmlContent' => $htmlBody
     ];
 
-    $smtp = [];
     $success = false;
 
     try {
-        $socket = @fsockopen($smtp_host, $smtp_port, $errno, $errstr, 15);
-        if (!$socket) throw new Exception("Could not connect to $smtp_host on port $smtp_port: $errstr ($errno)");
-
-        $read = function($socket) {
-            $data = "";
-            while ($str = fgets($socket, 515)) {
-                $data .= $str;
-                if (substr($str, 3, 1) == " ") break;
-            }
-            return $data;
-        };
-
-        $write = function($socket, $cmd) {
-            fputs($socket, $cmd . "\r\n");
-        };
-
-        $read($socket); // 220
-        $write($socket, "EHLO " . $_SERVER['SERVER_NAME']); $read($socket);
-        $write($socket, "STARTTLS"); $read($socket);
+        $ch = curl_init($api_url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'accept: application/json',
+            'api-key: ' . $password,
+            'content-type: application/json'
+        ]);
         
-        if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
-            throw new Exception("STARTTLS failed");
+        $response = curl_exec($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($http_code >= 200 && $http_code < 300) {
+            $success = true;
+        } else {
+            $resp = json_decode($response, true);
+            $errText = $resp['message'] ?? $response;
+            throw new Exception("Brevo API Error ($http_code): $errText. Ensure your API Key is correct and Sender Email ($username) is verified in Brevo.");
         }
-
-        $write($socket, "EHLO " . $_SERVER['SERVER_NAME']); $read($socket);
-        $write($socket, "AUTH LOGIN"); $read($socket);
-        $write($socket, base64_encode($username)); $read($socket);
-        $write($socket, base64_encode($password)); $res = $read($socket);
-        
-        if (strpos($res, "235") === false) {
-            throw new Exception("Authentication failed on Brevo (535). Please ensure your API Key is correct and your Sender Email ($username) is verified in your Brevo account settings.");
-        }
-
-        $write($socket, "MAIL FROM: <$username>"); $read($socket);
-        $write($socket, "RCPT TO: <$to>"); $read($socket);
-        $write($socket, "DATA"); $read($socket);
-        $write($socket, implode("\r\n", $headers) . "\r\n\r\n" . $htmlBody . "\r\n.");
-        $res = $read($socket);
-
-        if (strpos($res, "250") !== false) $success = true;
-
-        $write($socket, "QUIT"); fclose($socket);
     } catch (Exception $e) {
         $errorMsg = $e->getMessage();
         file_put_contents($logFile, "[$date] ERROR: $errorMsg\n", FILE_APPEND);
