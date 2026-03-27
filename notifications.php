@@ -118,6 +118,26 @@ require_once __DIR__ . "/header.php";
     </div>
 <?php endif; ?>
 
+<div class="card p-4 mb-4" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(124,92,255,0.2);">
+    <h3 class="h5 mb-3" style="color: var(--brand2);">📡 Email API Settings (Permanent Fix)</h3>
+    <p class="small text-muted mb-3">Cloud servers like Render block traditional email. Use the <strong>Brevo HTTP API</strong> for 100% reliability.</p>
+    
+    <form method="POST" class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label small">Sender Email (Verified in Brevo)</label>
+            <input type="email" name="sender_email" class="form-control form-control-sm bg-dark text-white border-secondary" value="<?= e($local_user) ?>" required>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label small">Brevo API v3 Key (starts with xsmtp...)</label>
+            <input type="password" name="brevo_api_key" class="form-control form-control-sm bg-dark text-white border-secondary" value="<?= e($local_pass) ?>" required>
+        </div>
+        <div class="col-12">
+            <button type="submit" name="save_settings" class="btn btn-sm btn-outline-primary">💾 Save Settings</button>
+            <a href="https://app.brevo.com/settings/keys/smtp" target="_blank" class="btn btn-sm btn-link text-decoration-none small">Get Your API Key Here →</a>
+        </div>
+    </form>
+</div>
+
 <div class="grid">
     <div class="col-8">
         <div class="card" style="box-shadow: 0 10px 30px rgba(0,0,0,.2);">

@@ -42,6 +42,11 @@ function send_church_email(string $to, string $subject, string $message): bool {
     $logFile = defined('MAIL_LOG_FILE') ? MAIL_LOG_FILE : __DIR__ . '/logs/mail.log';
     if (!file_exists(dirname($logFile))) mkdir(dirname($logFile), 0777, true);
 
+    // Support for locally saved API settings from the Dashboard
+    if (file_exists(__DIR__ . '/config_mail_local.php')) {
+        include_once __DIR__ . '/config_mail_local.php';
+    }
+
     $htmlBody = "
     <html><head><style>
             body { font-family: sans-serif; line-height: 1.6; color: #333; }
@@ -58,8 +63,8 @@ function send_church_email(string $to, string $subject, string $message): bool {
     $errors = [];
 
     // --- STEP 1: TRY BREVO FIRST (Most reliable on cloud) ---
-    $b_user = getenv('BREVO_USERNAME') ?: (defined('BREVO_USERNAME') ? BREVO_USERNAME : '');
-    $b_pass = getenv('BREVO_PASSWORD') ?: (defined('BREVO_PASSWORD') ? BREVO_PASSWORD : '');
+    $b_user = defined('LOCAL_BREVO_USER') ? LOCAL_BREVO_USER : (getenv('BREVO_USERNAME') ?: '');
+    $b_pass = defined('LOCAL_BREVO_PASS') ? LOCAL_BREVO_PASS : (getenv('BREVO_PASSWORD') ?: '');
     
     if ($b_pass) {
         try {
