@@ -29,7 +29,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             if ($ok) {
                 flash_set("Test email sent successully to $testEmail! Check your inbox.");
             } else {
-                flash_set("Email failed to send. Please check your App Password in mail_config.php", "error");
+                flash_set("Email failed to send. Please check your Brevo API Key was correctly set in the Render environment variables under MAIL_PASSWORD.", "error");
             }
         }
         redirect("notifications.php");
@@ -172,25 +172,15 @@ require_once __DIR__ . "/header.php";
     </div>
 
     <div class="col-4">
-        <div class="card" style="background:rgba(46,233,166,.05); border-color:rgba(46,233,166,.2); margin-bottom:20px;">
-            <h3 style="margin:0 0 15px; color:var(--brand2); font-weight:950; font-size:1.1rem;">🛠️ Quick System Test</h3>
-            <p class="small" style="margin-bottom:15px; line-height:1.5;">Verify your Gmail configuration is correct by sending a quick test email to yourself.</p>
-            <form method="post" action="notifications.php">
-                <input type="hidden" name="action" value="test_config">
-                <input class="input" name="test_email" type="email" placeholder="Your email address" required style="margin-bottom:10px; font-size:0.85rem;">
-                <button type="submit" class="btn btn-ghost" style="width:100%; font-size:0.85rem; border-color:var(--brand2); color:var(--brand2);">Run Connection Test</button>
-            </form>
-        </div>
-
         <div class="card" style="background:rgba(255,193,7,.05); border-color:rgba(255,193,7,.15);">
-            <h3 style="margin:0 0 10px; color:#ffcc00; font-weight:950; font-size:1.1rem;">Gmail Setup Check</h3>
+            <h3 style="margin:0 0 10px; color:#ffcc00; font-weight:950; font-size:1.1rem;">Brevo Setup Check</h3>
             <p class="small" style="line-height:1.6; color:var(--muted);">
                 If emails are not reaching recipients, please check:
             </p>
             <ul class="small" style="padding-left:18px; color:var(--muted);">
-                <li>Is <strong>App Password</strong> correct in <code>mail_config.php</code>?</li>
-                <li>Is your <strong>Gmail Address</strong> correct?</li>
-                <li>Check your <strong>Spam</strong> folder.</li>
+                <li>Is your <strong>Brevo API Key</strong> set in Render (variable <code>MAIL_PASSWORD</code>)?</li>
+                <li>Is your <strong>Sender Email</strong> (variable <code>MAIL_USERNAME</code>) verified in Brevo?</li>
+                <li>Check your <strong>Spam</strong> folder on the receiving account.</li>
             </ul>
         </div>
 

@@ -110,7 +110,9 @@ function send_church_email(string $to, string $subject, string $message): bool {
         $write($socket, base64_encode($username)); $read($socket);
         $write($socket, base64_encode($password)); $res = $read($socket);
         
-        if (strpos($res, "235") === false) throw new Exception("Auth failed: $res");
+        if (strpos($res, "235") === false) {
+            throw new Exception("Authentication failed on Brevo (535). Please ensure your API Key is correct and your Sender Email ($username) is verified in your Brevo account settings.");
+        }
 
         $write($socket, "MAIL FROM: <$username>"); $read($socket);
         $write($socket, "RCPT TO: <$to>"); $read($socket);
