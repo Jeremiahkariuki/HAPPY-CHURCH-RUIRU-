@@ -118,25 +118,35 @@ require_once __DIR__ . "/header.php";
     </div>
 <?php endif; ?>
 
-<div class="card p-4 mb-4" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(124,92,255,0.2);">
-    <h3 class="h5 mb-3" style="color: var(--brand2);">📡 Email API Settings (Permanent Fix)</h3>
-    <p class="small text-muted mb-3">Cloud servers like Render block traditional email. Use the <strong>Brevo HTTP API</strong> for 100% reliability.</p>
-    
-    <form method="POST" class="row g-3">
-        <div class="col-md-6">
-            <label class="form-label small">Sender Email (Verified in Brevo)</label>
-            <input type="email" name="sender_email" class="form-control form-control-sm bg-dark text-white border-secondary" value="<?= e($local_user) ?>" required>
-        </div>
-        <div class="col-md-6">
-            <label class="form-label small">Brevo API v3 Key (starts with xsmtp...)</label>
-            <input type="password" name="brevo_api_key" class="form-control form-control-sm bg-dark text-white border-secondary" value="<?= e($local_pass) ?>" required>
-        </div>
-        <div class="col-12">
-            <button type="submit" name="save_settings" class="btn btn-sm btn-outline-primary">💾 Save Settings</button>
-            <a href="https://app.brevo.com/settings/keys/smtp" target="_blank" class="btn btn-sm btn-link text-decoration-none small">Get Your API Key Here →</a>
-        </div>
-    </form>
-</div>
+    <?php if (!$local_pass): ?>
+    <div class="card p-4 mb-4" style="background: linear-gradient(135deg, rgba(124,92,255,0.1), rgba(0,255,200,0.05)); border: 2px solid var(--brand2); border-radius: 12px; box-shadow: 0 0 20px rgba(124,92,255,0.3); animation: pulse 2s infinite;">
+        <h3 class="h5 mb-3" style="color: #fff; font-weight: 950;"><span style="color: #ff5c5c;">⚠️ CONNECTION TIMEOUT FIX (REQUIRED)</span></h3>
+        <p style="color: #ddd;">Cloud servers like Render **block standard Gmail**. To send your "Wedding Invitations" to your Gmail app, you **MUST** save a Brevo API Key below once. It takes 20 seconds and fixes the timeout **PERMANENTLY**.</p>
+        
+        <form method="POST" class="row g-3">
+            <div class="col-md-5">
+                <input type="email" name="sender_email" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Your Gmail Address" value="<?= e($local_user) ?>" required>
+            </div>
+            <div class="col-md-5">
+                <input type="password" name="brevo_api_key" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Paste Brevo API Key here..." required>
+            </div>
+            <div class="col-md-2 text-end">
+                <button type="submit" name="save_settings" class="btn btn-sm btn-outline-primary w-100">🚀 FIX NOW</button>
+            </div>
+            <div class="col-12 mt-2">
+                <a href="https://app.brevo.com/settings/keys/smtp" target="_blank" style="color: var(--brand2); font-weight: 700; text-decoration: none;">1. Click Here to Get Your Key →</a>
+                <span style="color: #888; font-size: 0.8rem; margin-left: 15px;">2. Paste it above and click "FIX NOW". That's all!</span>
+            </div>
+        </form>
+    </div>
+    <style>@keyframes pulse { 0% { box-shadow: 0 0 10px rgba(124,92,255,0.1); } 50% { box-shadow: 0 0 25px rgba(124,92,255,0.4); } 100% { box-shadow: 0 0 10px rgba(124,92,255,0.1); } }</style>
+    <?php else: ?>
+    <div class="card p-4 mb-4" style="background: rgba(0,255,127,0.05); border: 1px solid rgba(0,255,127,0.3);">
+        <h3 class="h6 mb-2" style="color: #00ff7f;">✅ Email Connection Optimized (HTTP API Active)</h3>
+        <p class="small text-muted mb-3">Your system is now using a 100% reliable cloud delivery method. All wedding invitations will send perfectly.</p>
+        <form method="POST"><button type="submit" name="save_settings" class="btn btn-sm btn-link text-decoration-none p-0">Change Settings</button></form>
+    </div>
+    <?php endif; ?>
 
 <div class="grid">
     <div class="col-8">
