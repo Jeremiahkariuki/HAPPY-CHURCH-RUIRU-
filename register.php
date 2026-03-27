@@ -59,7 +59,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         throw $e;
                     }
                 }
-                $success = "Account created! Please wait for Admin approval before logging in.";
+                $newId = (int)$pdo->lastInsertId();
+                $otp = (string)rand(100000, 999999);
+                $pdo->prepare("UPDATE users SET otp_code = ? WHERE id = ?")->execute([$otp, $newId]);
+
+                $success = "Account created! A welcome email with your OTP has been sent. Please wait for Admin approval.";
+                
+                // Welcome Notification via Brevo
+                $subj = "Welcome to HAPPY CHURCH RUIRU • Verify Your Account";
+                $msg  = "Dear <strong>$username</strong>,<br><br>" .
+                        "Welcome to our church family! We are thrilled to have you join us online.<br><br>" .
+                        "Your account has been created and is currently awaiting administrator approval.<br><br>" .
+                        "<strong>Your Verification OTP:</strong> <span style='font-size:1.5rem; color:#7c5cff; font-weight:950;'>$otp</span><br><br>" .
+                        "Once approved, you will be able to access the full dashboard and events.<br><br>" .
+                        "God bless you!";
+                
+                send_church_email($email, $subj, $msg);
                 }
             }
         } catch (PDOException $e) {

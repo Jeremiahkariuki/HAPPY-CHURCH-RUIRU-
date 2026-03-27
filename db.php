@@ -163,7 +163,8 @@ try {
         "ALTER TABLE volunteers ADD COLUMN IF NOT EXISTS email varchar(100) DEFAULT NULL AFTER phone",
         "ALTER TABLE volunteers ADD COLUMN IF NOT EXISTS event_id int(11) DEFAULT NULL AFTER email",
         "ALTER TABLE events ADD COLUMN IF NOT EXISTS image_path varchar(255) DEFAULT NULL AFTER description",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS status varchar(20) NOT NULL DEFAULT 'Pending' AFTER role"
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS status varchar(20) NOT NULL DEFAULT 'Pending' AFTER role",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_code varchar(10) DEFAULT NULL AFTER status"
     ];
     foreach ($migrations as $m) {
         try { $pdo->exec($m); } catch (Exception $e) {}
