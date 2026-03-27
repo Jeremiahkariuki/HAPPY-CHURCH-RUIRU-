@@ -81,8 +81,8 @@ function send_church_email(string $to, string $subject, string $message): bool {
     $success = false;
 
     try {
-        $socket = fsockopen($smtp_host, $smtp_port, $errno, $errstr, 15);
-        if (!$socket) throw new Exception("Could not connect to $smtp_host: $errstr ($errno)");
+        $socket = @fsockopen($smtp_host, $smtp_port, $errno, $errstr, 15);
+        if (!$socket) throw new Exception("Could not connect to $smtp_host on port $smtp_port: $errstr ($errno)");
 
         $read = function($socket) {
             $data = "";
