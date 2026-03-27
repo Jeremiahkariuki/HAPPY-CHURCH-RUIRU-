@@ -63,15 +63,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $otp = (string)rand(100000, 999999);
                 $pdo->prepare("UPDATE users SET otp_code = ? WHERE id = ?")->execute([$otp, $newId]);
 
-                $success = "Account created! A welcome email with your OTP has been sent. Please wait for Admin approval.";
+                $success = "Account created! A welcome email with your OTP has been sent. Please <a href='verify_otp.php?id=$newId' style='color:var(--brand2); font-weight:900;'>click here to verify your account now</a>.";
                 
                 // Welcome Notification via Brevo
                 $subj = "Welcome to HAPPY CHURCH RUIRU • Verify Your Account";
+                $verifyLink = "https://" . ($_SERVER['HTTP_HOST'] ?? 'happy-church-ruiru-tsln.onrender.com') . "/verify_otp.php?id=$newId";
                 $msg  = "Dear <strong>$username</strong>,<br><br>" .
                         "Welcome to our church family! We are thrilled to have you join us online.<br><br>" .
-                        "Your account has been created and is currently awaiting administrator approval.<br><br>" .
                         "<strong>Your Verification OTP:</strong> <span style='font-size:1.5rem; color:#7c5cff; font-weight:950;'>$otp</span><br><br>" .
-                        "Once approved, you will be able to access the full dashboard and events.<br><br>" .
+                        "Please use the code above to verify your account here:<br>" .
+                        "<a href='$verifyLink' style='background:#7c5cff; color:#fff; padding:10px 20px; text-decoration:none; border-radius:8px; display:inline-block; margin:10px 0;'>Verify My Account Now</a><br><br>" .
+                        "Once verified, your account will be automatically approved for login.<br><br>" .
                         "God bless you!";
                 
                 send_church_email($email, $subj, $msg);
