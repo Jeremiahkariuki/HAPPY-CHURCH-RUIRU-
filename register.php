@@ -76,7 +76,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         "Once verified, your account will be automatically approved for login.<br><br>" .
                         "God bless you!";
                 
-                send_church_email($email, $subj, $msg);
+                $ok = send_church_email($email, $subj, $msg);
+                if (!$ok) {
+                    $success = "Account created! **SYSTEM NOTE:** We couldn't send the email yet, so please USE THIS CODE TO VERIFY: <strong style='font-size:1.4rem; color:var(--brand2);'>$otp</strong>. <a href='verify_otp.php?id=$newId' style='color:#fff; text-decoration:underline;'>Click here to verify now.</a>";
+                }
                 }
             }
         } catch (PDOException $e) {

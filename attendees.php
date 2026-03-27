@@ -62,7 +62,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         send_church_email($email, $subj, $msg);
     }
     
-    flash_set("Attendee added Successfully! " . ($email ? "A confirmation has been sent to " . e($email) : ""));
+    flash_set("Attendee added Successfully! Registration is now live in the database.");
 
   }
 
