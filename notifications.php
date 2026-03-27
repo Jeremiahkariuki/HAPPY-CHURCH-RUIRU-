@@ -10,6 +10,12 @@ require_once __DIR__ . "/helpers.php";
 $appName = "HAPPY CHURCH RUIRU";
 $flash = flash_get();
 
+if (file_exists(__DIR__ . '/config_mail_local.php')) {
+    include_once __DIR__ . '/config_mail_local.php';
+}
+$local_user = defined('LOCAL_BREVO_USER') ? LOCAL_BREVO_USER : (getenv('GMAIL_USERNAME') ?: 'simonnjoro965@gmail.com');
+$local_pass = defined('LOCAL_BREVO_PASS') ? LOCAL_BREVO_PASS : (getenv('BREVO_PASSWORD') ?: '');
+
 // Fetch recipient counts for groups
 $counts = [
     'members'    => (int)$pdo->query("SELECT COUNT(*) FROM users WHERE status = 'Approved' AND email IS NOT NULL AND email != ''")->fetchColumn(),
@@ -18,6 +24,19 @@ $counts = [
 ];
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    // Save settings logic
+    if (isset($_POST['save_settings'])) {
+        $apiKey = trim($_POST['brevo_api_key'] ?? '');
+        $senderEmail = trim($_POST['sender_email'] ?? '');
+        
+        $configContent = "<?php\n" .
+                        "define('LOCAL_BREVO_USER', '$senderEmail');\n" .
+                        "define('LOCAL_BREVO_PASS', '$apiKey');\n";
+        file_put_contents(__DIR__ . '/config_mail_local.php', $configContent);
+        flash_set("Email settings saved successfully! You can now send wedding invitations perfectly.");
+        redirect("notifications.php");
+    }
+
     $action = $_POST["action"] ?? "broadcast";
     
     if ($action === "test_config") {
