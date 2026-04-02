@@ -129,7 +129,7 @@ if ($tab === "events") {
     $st = $pdo->prepare("SELECT * FROM events WHERE id=?"); $st->execute([$id]);
     $edit = $st->fetch(PDO::FETCH_ASSOC) ?: null;
   }
-  $rows = $pdo->query("SELECT * FROM events ORDER BY event_date DESC, id DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC);
+  $rows = $pdo->query("SELECT * FROM events ORDER BY created_at DESC, event_date DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC);
 }
 
 /* ==========================
@@ -507,25 +507,25 @@ require_once __DIR__ . "/header.php";
 
   const CHARTS={};
   function destroyChart(k){if(CHARTS[k]){try{CHARTS[k].destroy();}catch(e){}CHARTS[k]=null;}}
-  function renderIf(id,build){const el=document.getElementById(id);if(!el||!ChartLib)return null;return build(el);}
+  function renderIf(id,build){const el=document.getElementById(id);if(!el||!window.Chart)return null;return build(el);}
   function lastNDays(L,C,n){const s=Math.max(0,L.length-n);return{labels:L.slice(s),counts:C.slice(s)};}
 
   function renderEventsTrend(range){
-    const el=document.getElementById('eventsLine'); if(!el||!ChartLib)return;
+    const el=document.getElementById('eventsLine'); if(!el||!window.Chart)return;
     destroyChart('eventsLine');
     let labels,data;
     if(range==='6m'){labels=monthLabels.length?monthLabels:['No data'];data=monthCounts.length?monthCounts:[0];}
     else if(range==='30'){labels=dailyLabels30.length?dailyLabels30:['No data'];data=dailyCounts30.length?dailyCounts30:[0];}
     else{const s=lastNDays(dailyLabels30,dailyCounts30,7);labels=s.labels.length?s.labels:['No data'];data=s.counts.length?s.counts:[0];}
-    CHARTS['eventsLine']=new ChartLib(el,{type:'line',data:{labels,datasets:[{label:'Events',data,tension:.35,borderWidth:2,pointRadius:3}]},options:baseOpts});
+    CHARTS['eventsLine']=new window.Chart(el,{type:'line',data:{labels,datasets:[{label:'Events',data,tension:.35,borderWidth:2,pointRadius:3}]},options:baseOpts});
   }
   if(document.getElementById('eventsLine')){
     renderEventsTrend('7');
     document.querySelectorAll('.seg button').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('.seg button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderEventsTrend(btn.dataset.range);});});
   }
-  renderIf('attendancePie',(el)=>{destroyChart('attendancePie');CHARTS['attendancePie']=new ChartLib(el,{type:'pie',data:{labels:attLabels.length?attLabels:['No data'],datasets:[{label:'Attendance',data:attCounts.length?attCounts:[1],borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:textColor,font:{weight:800}}}}}});return CHARTS['attendancePie'];});
-  renderIf('volunteersBar',(el)=>{destroyChart('volunteersBar');CHARTS['volunteersBar']=new ChartLib(el,{type:'bar',data:{labels:volsMinistryLabels.length?volsMinistryLabels:['No data'],datasets:[{label:'Volunteers',data:volsMinistryCounts.length?volsMinistryCounts:[0],borderWidth:1}]},options:baseOpts});return CHARTS['volunteersBar'];});
-  renderIf('attendeesBar',(el)=>{destroyChart('attendeesBar');CHARTS['attendeesBar']=new ChartLib(el,{type:'bar',data:{labels:attsEventLabels.length?attsEventLabels:['No data'],datasets:[{label:'Attendees',data:attsEventCounts.length?attsEventCounts:[0],borderWidth:1}]},options:baseOpts});return CHARTS['attendeesBar'];});
+  renderIf('attendancePie',(el)=>{destroyChart('attendancePie');CHARTS['attendancePie']=new window.Chart(el,{type:'pie',data:{labels:attLabels.length?attLabels:['No data'],datasets:[{label:'Attendance',data:attCounts.length?attCounts:[1],borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:textColor,font:{weight:800}}}}}});return CHARTS['attendancePie'];});
+  renderIf('volunteersBar',(el)=>{destroyChart('volunteersBar');CHARTS['volunteersBar']=new window.Chart(el,{type:'bar',data:{labels:volsMinistryLabels.length?volsMinistryLabels:['No data'],datasets:[{label:'Volunteers',data:volsMinistryCounts.length?volsMinistryCounts:[0],borderWidth:1}]},options:baseOpts});return CHARTS['volunteersBar'];});
+  renderIf('attendeesBar',(el)=>{destroyChart('attendeesBar');CHARTS['attendeesBar']=new window.Chart(el,{type:'bar',data:{labels:attsEventLabels.length?attsEventLabels:['No data'],datasets:[{label:'Attendees',data:attsEventCounts.length?attsEventCounts:[0],borderWidth:1}]},options:baseOpts});return CHARTS['attendeesBar'];});
 </script>
 
 <?php require_once __DIR__ . "/footer.php"; ?>
