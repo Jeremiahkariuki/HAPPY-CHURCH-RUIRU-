@@ -45,16 +45,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 }
 
                 $hash = password_hash($password, PASSWORD_DEFAULT);
+                $status = ($role === 'admin' || $role === 'Admin') ? 'Approved' : 'Approved';
                 try {
-                    $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, role, status) VALUES (?, ?, ?, ?, 'Pending')");
-                    $stmt->execute([$username, $email, $hash, $role]);
+                    $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, role, status) VALUES (?, ?, ?, ?, ?)");
+                    $stmt->execute([$username, $email, $hash, $role, $status]);
                 } catch (PDOException $e) {
                     // If error is about missing status column, try to add it
                     if (strpos($e->getMessage(), "Unknown column 'status'") !== false) {
                         $pdo->exec("ALTER TABLE users ADD COLUMN status varchar(20) NOT NULL DEFAULT 'Pending' AFTER role");
                         // Try insert again
-                        $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, role, status) VALUES (?, ?, ?, ?, 'Pending')");
-                        $stmt->execute([$username, $email, $hash, $role]);
+                        $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, role, status) VALUES (?, ?, ?, ?, ?)");
+                        $stmt->execute([$username, $email, $hash, $role, $status]);
                     } else {
                         throw $e;
                     }
