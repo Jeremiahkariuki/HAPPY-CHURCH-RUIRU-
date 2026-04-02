@@ -14,8 +14,13 @@ function format_date(?string $date, string $format = "d M Y"): string {
 }
 
 function redirect(string $to): void {
-  header("Location: " . $to);
-  exit;
+    header("Location: " . $to);
+    
+    // Perform background tasks if supported (makes the UI feel instant)
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    }
+    exit;
 }
 
 function flash_set(string $msg, string $type="success"): void {
