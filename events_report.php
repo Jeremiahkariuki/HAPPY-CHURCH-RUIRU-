@@ -7,7 +7,13 @@ require_login();
 require_once __DIR__ . "/db.php";
 require_once __DIR__ . "/helpers.php";
 
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Pragma: no-cache");
+header("Expires: 0");
+
 $appName = "HAPPY CHURCH RUIRU";
+$basePath = rtrim(str_replace("\\", "/", dirname((string)($_SERVER["SCRIPT_NAME"] ?? ""))), "/");
+$dashboardHref = ($basePath === "" ? "" : $basePath) . "/dashboard.php";
 
 $q = trim((string)($_GET["q"] ?? ""));
 $statusF = trim((string)($_GET["status"] ?? ""));
@@ -63,7 +69,7 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <body>
   <div class="report-container">
     <div class="no-print" style="display:flex; gap:12px; margin-bottom:30px; justify-content: space-between; align-items: center;">
-      <a class="btn btn-ghost" href="dashboard.php?tab=events" style="display:flex; align-items:center; gap:8px;">
+      <a class="btn btn-ghost" href="<?= e($dashboardHref) ?>" onclick="window.top.location.href='<?= e($dashboardHref) ?>'; return false;" style="display:flex; align-items:center; gap:8px;">
         ← Back to Dashboard
       </a>
       <button class="btn" onclick="window.print()" style="padding: 12px 24px; background: linear-gradient(135deg, var(--brand), var(--brand2)); color: #07101f; font-weight: 950; border: none;">

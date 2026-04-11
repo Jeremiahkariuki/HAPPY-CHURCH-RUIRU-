@@ -3,12 +3,22 @@ declare(strict_types=1);
 
 session_start();
 
+// Force browser not to cache this page so the user sees the newest UI immediately
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+
 /* Load database connection */
 $db_path = dirname(__FILE__) . DIRECTORY_SEPARATOR . "db.php";
 require_once $db_path;
 
 /* Confirm PDO exists */
 $db_error = ($pdo === null);
+
+/* Load church name from config */
+$_cfg = require __DIR__ . "/config.php";
+$appName = $_cfg["app"]["name"] ?? "HAPPY CHURCH RUIRU";
+unset($_cfg);
 
 if (!function_exists('e')) {
     function e(string $s): string {
@@ -114,7 +124,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Login • Happy Church Ruiru</title>
+<title>Login • <?= e($appName) ?></title>
 <link rel="stylesheet" href="style.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -455,7 +465,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     
     <div class="brand-header">
       <div class="brand-icon">✝</div>
-      <h1 class="brand-title">HAPPY CHURCH</h1>
+      <h1 class="brand-title"><?= e($appName) ?></h1>
       <div class="brand-subtitle">Church Management System</div>
     </div>
 
@@ -491,7 +501,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <div class="register-section">
       <div class="register-card">
         <div class="register-text">
-          <strong>Join Happy Church Ruiru</strong><br>
+          <strong>Join <?= e($appName) ?></strong><br>
           Create an account to access church events, volunteer opportunities, and community resources.
         </div>
         <a href="register.php" class="register-btn">

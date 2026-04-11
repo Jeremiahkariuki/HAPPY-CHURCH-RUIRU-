@@ -7,13 +7,17 @@ require_login();
 require_once __DIR__ . "/db.php";
 require_once __DIR__ . "/helpers.php";
 
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Pragma: no-cache");
+header("Expires: 0");
+
 $appName = "HAPPY CHURCH RUIRU";
 
-$q = trim((string)($_GET["q"] ?? ""));
+$q        = trim((string)($_GET["q"] ?? ""));
 $ministryF = trim((string)($_GET["ministry"] ?? ""));
-$availF = trim((string)($_GET["availability"] ?? ""));
+$availF    = trim((string)($_GET["availability"] ?? ""));
 
-$where = [];
+$where  = [];
 $params = [];
 
 if ($q !== "") {
@@ -21,7 +25,7 @@ if ($q !== "") {
   $params[] = "%$q%"; $params[] = "%$q%"; $params[] = "%$q%";
 }
 if ($ministryF !== "") { $where[] = "ministry LIKE ?"; $params[] = "%$ministryF%"; }
-if ($availF !== "") { $where[] = "availability = ?"; $params[] = $availF; }
+if ($availF    !== "") { $where[] = "availability = ?"; $params[] = $availF; }
 
 $whereSql = $where ? ("WHERE " . implode(" AND ", $where)) : "";
 
@@ -38,7 +42,8 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Volunteers Report - <?= e($appName) ?></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Volunteers Report – <?= e($appName) ?></title>
   <link rel="stylesheet" href="style.css">
   <style>
     body { background: #0b1220; color: #eaf2ff; margin: 0; padding: 40px; font-family: ui-sans-serif, system-ui, sans-serif; }
@@ -52,72 +57,91 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     th { text-align: left; color: #a9b7d0; font-weight: 700; padding: 12px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
     td { background: rgba(255,255,255,.04); border-top: 1px solid rgba(255,255,255,.06); border-bottom: 1px solid rgba(255,255,255,.06); padding: 15px 12px; font-size: 0.95rem; }
     td:first-child { border-left: 1px solid rgba(255,255,255,.06); border-radius: 12px 0 0 12px; font-weight: 700; }
-    td:last-child { border-right: 1px solid rgba(255,255,255,.06); border-radius: 0 12px 12px 0; }
+    td:last-child  { border-right: 1px solid rgba(255,255,255,.06); border-radius: 0 12px 12px 0; }
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 22px; border-radius: 12px;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+      color: #eaf2ff; font-weight: 800; font-size: 0.95rem;
+      text-decoration: none; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .back-btn:hover { background: rgba(124,92,255,.18); border-color: rgba(124,92,255,.35); }
+    .print-btn {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #7c5cff, #2ee9a6);
+      color: #07101f; font-weight: 950; border: none;
+      border-radius: 12px; cursor: pointer; font-size: 0.95rem;
+    }
     @media print {
-      .no-print { display: none; }
+      .no-print { display: none !important; }
       body { background: #fff; color: #000; padding: 0; }
-      td, th { border: 1px solid #ddd; background: transparent; color: #000; }
+      td, th { border: 1px solid #ddd !important; background: transparent !important; color: #000 !important; }
       .filters-box { border: 1px solid #ddd; background: transparent; }
-      .filter-tag { border: 1px solid #ddd; background: transparent; color: #000; }
+      .filter-tag  { border: 1px solid #ddd; background: transparent; color: #000; }
     }
   </style>
 </head>
 <body>
-  <div class="report-container">
-    <div class="no-print" style="display:flex; gap:12px; margin-bottom:30px; justify-content: space-between; align-items: center;">
-      <a class="btn btn-ghost" href="dashboard.php?tab=volunteers" style="display:flex; align-items:center; gap:8px;">
-        ← Back to Dashboard
-      </a>
-      <button class="btn" onclick="window.print()" style="padding: 12px 24px; background: linear-gradient(135deg, var(--brand), var(--brand2)); color: #07101f; font-weight: 950; border: none;">
-        🖨️ Print Report
-      </button>
-    </div>
+<div class="report-container">
 
-    <div class="report-header">
-      <h1>Church Volunteers Report</h1>
-      <div class="meta">
-        <span>📅 Generated: <strong><?= date("Y-m-d H:i") ?></strong></span>
-        <span>👤 System: <strong><?= e($appName) ?></strong></span>
-      </div>
-
-      <div class="filters-box">
-        <div style="font-weight: 800; font-size: 0.8rem; color: #a9b7d0; text-transform: uppercase; margin-bottom: 8px;">Active Filters</div>
-        <?php
-          $active = false;
-          if ($q !== "") { echo "<span class='filter-tag'>Search: $q</span>"; $active = true; }
-          if ($ministryF !== "") { echo "<span class='filter-tag'>Ministry: $ministryF</span>"; $active = true; }
-          if ($availF !== "") { echo "<span class='filter-tag'>Availability: $availF</span>"; $active = true; }
-          if (!$active) echo "<span style='color:var(--muted); font-style:italic;'>Showing all records</span>";
-        ?>
-      </div>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th><th>Ministry</th><th>Event</th><th>Contacts</th><th>Availability</th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php foreach ($rows as $r): ?>
-          <tr>
-            <td><?= e($r["full_name"]) ?></td>
-            <td><span class="pill" style="font-size:0.7rem; margin:0; padding:4px 8px;"><?= e($r["ministry"]) ?></span></td>
-            <td><strong style="color:var(--brand);"><?= e($r["event_title"] ?: "General") ?></strong> <span style="font-size:0.75rem; opacity:0.8;"><?= $r["event_date"] ? "(".e(format_date($r["event_date"])).")" : "" ?></span></td>
-            <td class="small">
-              <?= e($r["phone"] ?: "-") ?><br>
-              <span style="opacity:0.8; font-size:0.8rem;"><?= e($r["email"] ?: "-") ?></span>
-            </td>
-            <td>
-              <span style="color:var(--brand2); font-weight:800; font-size:0.85rem;">📂 <?= e($r["availability"]) ?></span>
-            </td>
-          </tr>
-        <?php endforeach; ?>
-        <?php if (!$rows): ?>
-          <tr><td colspan="4" style="text-align:center; padding:60px; color:var(--muted);">No records found matching these criteria.</td></tr>
-        <?php endif; ?>
-      </tbody>
-    </table>
+  <!-- Top navigation bar -->
+  <div class="no-print" style="display:flex; gap:12px; margin-bottom:30px; justify-content:space-between; align-items:center;">
+    <button class="back-btn" onclick="window.location.href='/church_events_system/dashboard.php';">
+      ← Back to Dashboard
+    </button>
+    <button class="print-btn" onclick="window.print()">🖨️ Print Report</button>
   </div>
+
+  <div class="report-header">
+    <h1>Church Volunteers Report</h1>
+    <div class="meta">
+      <span>📅 Generated: <strong><?= date("Y-m-d H:i") ?></strong></span>
+      <span>👤 System: <strong><?= e($appName) ?></strong></span>
+    </div>
+
+    <div class="filters-box">
+      <div style="font-weight:800; font-size:0.8rem; color:#a9b7d0; text-transform:uppercase; margin-bottom:8px;">Active Filters</div>
+      <?php
+        $active = false;
+        if ($q        !== "") { echo "<span class='filter-tag'>Search: ".e($q)."</span>"; $active = true; }
+        if ($ministryF !== "") { echo "<span class='filter-tag'>Ministry: ".e($ministryF)."</span>"; $active = true; }
+        if ($availF   !== "") { echo "<span class='filter-tag'>Availability: ".e($availF)."</span>"; $active = true; }
+        if (!$active) echo "<span style='color:#a9b7d0; font-style:italic;'>Showing all records</span>";
+      ?>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th><th>Ministry</th><th>Event</th><th>Contacts</th><th>Availability</th>
+      </tr>
+    </thead>
+    <tbody>
+      <?php foreach ($rows as $r): ?>
+        <tr>
+          <td><?= e($r["full_name"]) ?></td>
+          <td><span class="pill" style="font-size:0.7rem; margin:0; padding:4px 8px;"><?= e($r["ministry"]) ?></span></td>
+          <td>
+            <strong style="color:#7c5cff;"><?= e($r["event_title"] ?: "General") ?></strong>
+            <span style="font-size:0.75rem; opacity:0.8;"><?= $r["event_date"] ? "(".e(format_date($r["event_date"])).")" : "" ?></span>
+          </td>
+          <td class="small">
+            <?= e($r["phone"] ?: "-") ?><br>
+            <span style="opacity:0.8; font-size:0.8rem;"><?= e($r["email"] ?: "-") ?></span>
+          </td>
+          <td>
+            <span style="color:#2ee9a6; font-weight:800; font-size:0.85rem;">📂 <?= e($r["availability"]) ?></span>
+          </td>
+        </tr>
+      <?php endforeach; ?>
+      <?php if (!$rows): ?>
+        <tr><td colspan="5" style="text-align:center; padding:60px; color:#a9b7d0;">No records found matching these criteria.</td></tr>
+      <?php endif; ?>
+    </tbody>
+  </table>
+
+</div>
 </body>
 </html>

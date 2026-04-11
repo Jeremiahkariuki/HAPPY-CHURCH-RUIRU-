@@ -7,15 +7,19 @@ require_login();
 require_once __DIR__ . "/db.php";
 require_once __DIR__ . "/helpers.php";
 
-$appName = "HAPPY CHURCH RUIRU";
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Pragma: no-cache");
+header("Expires: 0");
 
-$q = trim((string)($_GET["q"] ?? ""));
-$statusF = trim((string)($_GET["status"] ?? ""));
-$eventF = trim((string)($_GET["event_id"] ?? ""));
-$from = trim((string)($_GET["from"] ?? ""));
-$to = trim((string)($_GET["to"] ?? ""));
+$appName  = "HAPPY CHURCH RUIRU";
 
-$where = [];
+$q       = trim((string)($_GET["q"]        ?? ""));
+$statusF = trim((string)($_GET["status"]   ?? ""));
+$eventF  = trim((string)($_GET["event_id"] ?? ""));
+$from    = trim((string)($_GET["from"]     ?? ""));
+$to      = trim((string)($_GET["to"]       ?? ""));
+
+$where  = [];
 $params = [];
 
 if ($q !== "") {
@@ -23,16 +27,18 @@ if ($q !== "") {
   $params[] = "%$q%"; $params[] = "%$q%"; $params[] = "%$q%";
 }
 if ($statusF !== "") { $where[] = "a.attendance_status = ?"; $params[] = $statusF; }
-if ($eventF !== "") { $where[] = "a.event_id = ?"; $params[] = (int)$eventF; }
-if ($from !== "") { $where[] = "a.created_at >= ?"; $params[] = $from . " 00:00:00"; }
-if ($to !== "") { $where[] = "a.created_at <= ?"; $params[] = $to . " 23:59:59"; }
+if ($eventF  !== "") { $where[] = "a.event_id = ?";           $params[] = (int)$eventF; }
+if ($from    !== "") { $where[] = "a.created_at >= ?";         $params[] = $from . " 00:00:00"; }
+if ($to      !== "") { $where[] = "a.created_at <= ?";         $params[] = $to   . " 23:59:59"; }
 
 $whereSql = $where ? ("WHERE " . implode(" AND ", $where)) : "";
 
 $stmt = $pdo->prepare("
-  SELECT a.full_name,a.phone,a.email,e.title AS event_title,e.event_date,a.attendance_status,a.created_at
+  SELECT a.full_name, a.phone, a.email,
+         e.title AS event_title, e.event_date,
+         a.attendance_status, a.created_at
   FROM attendees a
-  LEFT JOIN events e ON e.id=a.event_id
+  LEFT JOIN events e ON e.id = a.event_id
   $whereSql
   ORDER BY a.id DESC
 ");
@@ -43,7 +49,8 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Attendees Report - <?= e($appName) ?></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Attendees Report – <?= e($appName) ?></title>
   <link rel="stylesheet" href="style.css">
   <style>
     body { background: #0b1220; color: #eaf2ff; margin: 0; padding: 40px; font-family: ui-sans-serif, system-ui, sans-serif; }
@@ -57,74 +64,98 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     th { text-align: left; color: #a9b7d0; font-weight: 700; padding: 12px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
     td { background: rgba(255,255,255,.04); border-top: 1px solid rgba(255,255,255,.06); border-bottom: 1px solid rgba(255,255,255,.06); padding: 15px 12px; font-size: 0.95rem; }
     td:first-child { border-left: 1px solid rgba(255,255,255,.06); border-radius: 12px 0 0 12px; font-weight: 700; }
-    td:last-child { border-right: 1px solid rgba(255,255,255,.06); border-radius: 0 12px 12px 0; }
+    td:last-child  { border-right: 1px solid rgba(255,255,255,.06); border-radius: 0 12px 12px 0; }
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 22px; border-radius: 12px;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+      color: #eaf2ff; font-weight: 800; font-size: 0.95rem;
+      text-decoration: none; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .back-btn:hover { background: rgba(124,92,255,.18); border-color: rgba(124,92,255,.35); }
+    .print-btn {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #7c5cff, #2ee9a6);
+      color: #07101f; font-weight: 950; border: none;
+      border-radius: 12px; cursor: pointer; font-size: 0.95rem;
+    }
     @media print {
-      .no-print { display: none; }
+      .no-print { display: none !important; }
       body { background: #fff; color: #000; padding: 0; }
-      td, th { border: 1px solid #ddd; background: transparent; color: #000; }
+      td, th { border: 1px solid #ddd !important; background: transparent !important; color: #000 !important; }
       .filters-box { border: 1px solid #ddd; background: transparent; }
-      .filter-tag { border: 1px solid #ddd; background: transparent; color: #000; }
+      .filter-tag  { border: 1px solid #ddd; background: transparent; color: #000; }
     }
   </style>
 </head>
 <body>
-  <div class="report-container">
-    <div class="no-print" style="display:flex; gap:12px; margin-bottom:30px; justify-content: space-between; align-items: center;">
-      <a class="btn btn-ghost" href="dashboard.php?tab=attendees" style="display:flex; align-items:center; gap:8px;">
-        ← Back to Dashboard
-      </a>
-      <button class="btn" onclick="window.print()" style="padding: 12px 24px; background: linear-gradient(135deg, var(--brand), var(--brand2)); color: #07101f; font-weight: 950; border: none;">
-        🖨️ Print Report
-      </button>
-    </div>
+<div class="report-container">
 
-    <div class="report-header">
-      <h1>Church Attendees Report</h1>
-      <div class="meta">
-        <span>📅 Generated: <strong><?= date("Y-m-d H:i") ?></strong></span>
-        <span>👤 System: <strong><?= e($appName) ?></strong></span>
-      </div>
-
-      <div class="filters-box">
-        <div style="font-weight: 800; font-size: 0.8rem; color: #a9b7d0; text-transform: uppercase; margin-bottom: 8px;">Active Filters</div>
-        <?php
-          $active = false;
-          if ($q !== "") { echo "<span class='filter-tag'>Search: $q</span>"; $active = true; }
-          if ($statusF !== "") { echo "<span class='filter-tag'>Status: $statusF</span>"; $active = true; }
-          if ($from !== "") { echo "<span class='filter-tag'>From: $from</span>"; $active = true; }
-          if ($to !== "") { echo "<span class='filter-tag'>To: $to</span>"; $active = true; }
-          if (!$active) echo "<span style='color:var(--muted); font-style:italic;'>Showing all records</span>";
-        ?>
-      </div>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th><th>Phone</th><th>Email</th><th>Event</th><th>Status</th><th>Added</th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php foreach ($rows as $r): ?>
-          <tr>
-            <td><?= e($r["full_name"]) ?></td>
-            <td><?= e($r["phone"] ?? "-") ?></td>
-            <td><?= e($r["email"] ?? "-") ?></td>
-            <td><?= e($r["event_title"] ?? "-") ?> <?= ($r["event_date"]) ? "• ".e(format_date($r["event_date"])) : "" ?></td>
-            <td>
-              <?php
-                $color = ["Registered"=>"var(--brand)", "Confirmed"=>"var(--brand2)", "Attended"=>"var(--brand2)", "Cancelled"=>"var(--danger)"][$r["attendance_status"]] ?? "var(--text)";
-              ?>
-              <span style="color:<?= $color ?>; font-weight:800; font-size:0.85rem;">● <?= e($r["attendance_status"]) ?></span>
-            </td>
-            <td><?= e(format_date($r["created_at"])) ?></td>
-          </tr>
-        <?php endforeach; ?>
-        <?php if (!$rows): ?>
-          <tr><td colspan="6" style="text-align:center; padding:60px; color:var(--muted);">No records found matching these criteria.</td></tr>
-        <?php endif; ?>
-      </tbody>
-    </table>
+  <!-- Top navigation bar -->
+  <div class="no-print" style="display:flex; gap:12px; margin-bottom:30px; justify-content:space-between; align-items:center;">
+    <button class="back-btn" onclick="window.location.href='/church_events_system/dashboard.php';">
+      ← Back to Dashboard
+    </button>
+    <button class="print-btn" onclick="window.print()">🖨️ Print Report</button>
   </div>
+
+  <div class="report-header">
+    <h1>Church Attendees Report</h1>
+    <div class="meta">
+      <span>📅 Generated: <strong><?= date("Y-m-d H:i") ?></strong></span>
+      <span>👤 System: <strong><?= e($appName) ?></strong></span>
+    </div>
+
+    <div class="filters-box">
+      <div style="font-weight:800; font-size:0.8rem; color:#a9b7d0; text-transform:uppercase; margin-bottom:8px;">Active Filters</div>
+      <?php
+        $active = false;
+        if ($q      !== "") { echo "<span class='filter-tag'>Search: ".e($q)."</span>"; $active = true; }
+        if ($statusF !== "") { echo "<span class='filter-tag'>Status: ".e($statusF)."</span>"; $active = true; }
+        if ($from   !== "") { echo "<span class='filter-tag'>From: ".e($from)."</span>"; $active = true; }
+        if ($to     !== "") { echo "<span class='filter-tag'>To: ".e($to)."</span>"; $active = true; }
+        if (!$active) echo "<span style='color:#a9b7d0; font-style:italic;'>Showing all records</span>";
+      ?>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th><th>Phone</th><th>Email</th><th>Event</th><th>Status</th><th>Added</th>
+      </tr>
+    </thead>
+    <tbody>
+      <?php foreach ($rows as $r): ?>
+        <tr>
+          <td><?= e($r["full_name"]) ?></td>
+          <td><?= e($r["phone"] ?? "-") ?></td>
+          <td><?= e($r["email"] ?? "-") ?></td>
+          <td>
+            <?= e($r["event_title"] ?? "-") ?>
+            <?= ($r["event_date"]) ? "• ".e(format_date($r["event_date"])) : "" ?>
+          </td>
+          <td>
+            <?php
+              $color = [
+                "Registered" => "#7c5cff",
+                "Confirmed"  => "#2ee9a6",
+                "Attended"   => "#2ee9a6",
+                "Cancelled"  => "#ff4d6d"
+              ][$r["attendance_status"]] ?? "#eaf2ff";
+            ?>
+            <span style="color:<?= $color ?>; font-weight:800; font-size:0.85rem;">● <?= e($r["attendance_status"]) ?></span>
+          </td>
+          <td><?= e(format_date($r["created_at"])) ?></td>
+        </tr>
+      <?php endforeach; ?>
+      <?php if (!$rows): ?>
+        <tr><td colspan="6" style="text-align:center; padding:60px; color:#a9b7d0;">No records found matching these criteria.</td></tr>
+      <?php endif; ?>
+    </tbody>
+  </table>
+
+</div>
 </body>
 </html>

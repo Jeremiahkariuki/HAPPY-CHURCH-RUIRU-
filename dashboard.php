@@ -9,10 +9,6 @@ require_once __DIR__ . "/helpers.php";
 
 function e2(string $s): string { return htmlspecialchars($s, ENT_QUOTES, "UTF-8"); }
 
-$tab = (string)($_GET["tab"] ?? "events");
-$allowedTabs = ["events","volunteers","attendees","contacts","about"];
-if (!in_array($tab, $allowedTabs, true)) $tab = "events";
-
 $action = (string)($_GET["action"] ?? "");
 $id = isset($_GET["id"]) ? (int)$_GET["id"] : 0;
 
@@ -97,111 +93,6 @@ try {
     }
 } catch (Exception $e) { $attRate = 0.0; }
 
-/* ==========================
-   EVENTS CRUD
-========================== */
-if ($tab === "events") {
-  if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $mode = (string)($_POST["mode"] ?? "create");
-    $title = trim((string)($_POST["title"] ?? ""));
-    $event_date = trim((string)($_POST["event_date"] ?? ""));
-    $location = trim((string)($_POST["location"] ?? ""));
-    $status = trim((string)($_POST["status"] ?? "Scheduled"));
-
-    if ($title === "" || $event_date === "" || $location === "") {
-      $flash = "Please fill Title, Date and Location.";
-    } else {
-      if ($mode === "update") {
-        $eid = (int)($_POST["id"] ?? 0);
-        $pdo->prepare("UPDATE events SET title=?, event_date=?, location=?, status=? WHERE id=?")->execute([$title, $event_date, $location, $status, $eid]);
-      } else {
-        $pdo->prepare("INSERT INTO events (title,event_date,location,status) VALUES (?,?,?,?)")->execute([$title, $event_date, $location, $status]);
-      }
-      header("Location: dashboard.php?tab=events");
-      exit;
-    }
-  }
-  if ($action === "delete" && $id > 0) {
-    $pdo->prepare("DELETE FROM events WHERE id=?")->execute([$id]);
-    header("Location: dashboard.php?tab=events"); exit;
-  }
-  if ($action === "edit" && $id > 0) {
-    $st = $pdo->prepare("SELECT * FROM events WHERE id=?"); $st->execute([$id]);
-    $edit = $st->fetch(PDO::FETCH_ASSOC) ?: null;
-  }
-  $rows = $pdo->query("SELECT * FROM events ORDER BY created_at DESC, event_date DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC);
-}
-
-/* ==========================
-   VOLUNTEERS CRUD
-========================== */
-if ($tab === "volunteers") {
-  if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $mode = (string)($_POST["mode"] ?? "create");
-    $full_name = trim((string)($_POST["full_name"] ?? ""));
-    $phone = trim((string)($_POST["phone"] ?? ""));
-    $ministry = trim((string)($_POST["ministry"] ?? ""));
-    $availability = trim((string)($_POST["availability"] ?? "Both"));
-
-    if ($full_name === "" || $ministry === "") {
-      $flash = "Please fill Full Name and Ministry.";
-    } else {
-      if ($mode === "update") {
-        $vid = (int)($_POST["id"] ?? 0);
-        $pdo->prepare("UPDATE volunteers SET full_name=?, phone=?, ministry=?, availability=? WHERE id=?")->execute([$full_name, $phone ?: null, $ministry, $availability, $vid]);
-      } else {
-        $pdo->prepare("INSERT INTO volunteers (full_name, phone, ministry, availability) VALUES (?,?,?,?)")->execute([$full_name, $phone ?: null, $ministry, $availability]);
-      }
-      header("Location: dashboard.php?tab=volunteers"); exit;
-    }
-  }
-  if ($action === "delete" && $id > 0) {
-    $pdo->prepare("DELETE FROM volunteers WHERE id=?")->execute([$id]);
-    header("Location: dashboard.php?tab=volunteers"); exit;
-  }
-  if ($action === "edit" && $id > 0) {
-    $st = $pdo->prepare("SELECT * FROM volunteers WHERE id=?"); $st->execute([$id]);
-    $edit = $st->fetch(PDO::FETCH_ASSOC) ?: null;
-  }
-  $rows = $pdo->query("SELECT * FROM volunteers ORDER BY id DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC);
-}
-
-/* ==========================
-   ATTENDEES CRUD
-========================== */
-$eventsList = [];
-if ($tab === "attendees") {
-  $eventsList = $pdo->query("SELECT id,title,event_date FROM events ORDER BY event_date DESC")->fetchAll(PDO::FETCH_ASSOC);
-  if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $mode = (string)($_POST["mode"] ?? "create");
-    $full_name = trim((string)($_POST["full_name"] ?? ""));
-    $phone = trim((string)($_POST["phone"] ?? ""));
-    $event_id = ($_POST["event_id"] ?? "") !== "" ? (int)$_POST["event_id"] : null;
-    $attendance_status = trim((string)($_POST["attendance_status"] ?? "Registered"));
-
-    if ($full_name === "") {
-      $flash = "Please enter attendee full name.";
-    } else {
-      if ($mode === "update") {
-        $aid = (int)($_POST["id"] ?? 0);
-        $pdo->prepare("UPDATE attendees SET full_name=?, phone=?, event_id=?, attendance_status=? WHERE id=?")->execute([$full_name, $phone ?: null, $event_id, $attendance_status, $aid]);
-      } else {
-        $pdo->prepare("INSERT INTO attendees (full_name, phone, event_id, attendance_status) VALUES (?,?,?,?)")->execute([$full_name, $phone ?: null, $event_id, $attendance_status]);
-      }
-      header("Location: dashboard.php?tab=attendees"); exit;
-    }
-  }
-  if ($action === "delete" && $id > 0) {
-    $pdo->prepare("DELETE FROM attendees WHERE id=?")->execute([$id]);
-    header("Location: dashboard.php?tab=attendees"); exit;
-  }
-  if ($action === "edit" && $id > 0) {
-    $st = $pdo->prepare("SELECT * FROM attendees WHERE id=?"); $st->execute([$id]);
-    $edit = $st->fetch(PDO::FETCH_ASSOC) ?: null;
-  }
-  $rows = $pdo->query("SELECT a.*, e.title AS event_title FROM attendees a LEFT JOIN events e ON e.id=a.event_id ORDER BY a.id DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC);
-}
-
 require_once __DIR__ . "/header.php";
 ?>
 
@@ -256,12 +147,8 @@ require_once __DIR__ . "/header.php";
   <?php endif; ?>
 
 <!-- ============================================================
-     EVENTS TAB
+     MAIN DASHBOARD
 ============================================================ -->
-<?php if ($tab === "events"): ?>
-
-
-
   <div class="col-8">
     <div class="chartBox">
       <div class="chartHead">
@@ -305,57 +192,46 @@ require_once __DIR__ . "/header.php";
     </div>
   </div>
 
-
-<?php endif; ?>
-
-<!-- ============================================================
-     VOLUNTEERS TAB
-============================================================ -->
-<?php if ($tab === "volunteers"): ?>
-
-
-
-  <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
-  <div class="col-12">
+  <div class="col-6">
     <div class="chartBox">
       <div class="chartHead">
         <div><div class="chartTitle">Volunteers by Ministry</div><div class="chartSub">Top ministries (live from database)</div></div>
-        <div class="tag">Live</div>
+        <div class="tag" style="background:rgba(46,233,166,.15); color:var(--brand2); border:1px solid rgba(46,233,166,.3);">Volunteers</div>
       </div>
-      <div class="canvasWrap"><canvas id="volunteersBar"></canvas></div>
+      <div class="canvasWrap">
+        <?php if (empty($volsMinistryLabels)): ?>
+          <div style="height:100%; display:grid; place-items:center; opacity:0.5; text-align:center;">
+             <div><div style="font-size:2rem; margin-bottom:10px;">🤝</div><div class="small">No volunteers found.</div></div>
+          </div>
+        <?php else: ?>
+          <canvas id="volunteersBar"></canvas>
+        <?php endif; ?>
+      </div>
     </div>
   </div>
-
-
-  <?php endif; ?>
-<?php endif; ?>
-
-<!-- ============================================================
-     ATTENDEES TAB
-============================================================ -->
-<?php if ($tab === "attendees"): ?>
-
-
-
-  <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
-  <div class="col-12">
+  
+  <div class="col-6">
     <div class="chartBox">
       <div class="chartHead">
-        <div><div class="chartTitle">Attendees by Event</div><div class="chartSub">Top events by attendance (live from database)</div></div>
-        <div class="tag">Live</div>
+        <div><div class="chartTitle">Top Events Attendance</div><div class="chartSub">By number of attendees</div></div>
+        <div class="tag" style="background:rgba(255,193,7,.15); color:#ffcc00; border:1px solid rgba(255,193,7,.3);">Attendees</div>
       </div>
-      <div class="canvasWrap"><canvas id="attendeesBar"></canvas></div>
+      <div class="canvasWrap">
+        <?php if (empty($attsEventLabels)): ?>
+          <div style="height:100%; display:grid; place-items:center; opacity:0.5; text-align:center;">
+             <div><div style="font-size:2rem; margin-bottom:10px;">👥</div><div class="small">No attendee data yet.</div></div>
+          </div>
+        <?php else: ?>
+          <canvas id="attendeesBar"></canvas>
+        <?php endif; ?>
+      </div>
     </div>
   </div>
-
-
-  <?php endif; ?>
-<?php endif; ?>
 
 <!-- ============================================================
      CONTACTS TAB
 ============================================================ -->
-<?php if ($tab === "contacts"): ?>
+
   <div class="col-12">
     <div class="card" style="background:linear-gradient(135deg,rgba(124,92,255,.12),rgba(46,233,166,.06));margin-bottom:18px;">
       <h2 style="margin:0; font-weight:950; font-size:1.5rem;">📞 Contact Us</h2>
@@ -406,12 +282,10 @@ require_once __DIR__ . "/header.php";
       <div class="btn btn-ghost" style="display:inline-block; font-size:0.85rem;">Open Notification Panel →</div>
     </a>
   </div>
-<?php endif; ?>
-
 <!-- ============================================================
      ABOUT TAB
 ============================================================ -->
-<?php if ($tab === "about"): ?>
+
   <div class="col-12">
     <div class="card" style="padding:40px 24px;text-align:center;background:radial-gradient(circle at top right,rgba(124,92,255,.15),transparent),radial-gradient(circle at bottom left,rgba(46,233,166,.08),transparent),var(--card);">
       <div style="width:64px;height:64px;border-radius:20px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:grid;place-items:center;font-size:32px;color:#07101f;font-weight:950;margin:0 auto 16px;">✝</div>
@@ -486,7 +360,7 @@ require_once __DIR__ . "/header.php";
   <div class="col-4"><div class="kpi"><div class="num">1000+</div><div class="lbl">Community Members</div></div></div>
   <div class="col-4"><div class="kpi" style="background:linear-gradient(135deg,rgba(46,233,166,.2),rgba(124,92,255,.1));"><div class="num">15+</div><div class="lbl">Active Ministries</div></div></div>
   <div class="col-4"><div class="kpi"><div class="num">Weekly</div><div class="lbl">Community Outreach</div></div></div>
-<?php endif; ?>
+
 
 </div>
 

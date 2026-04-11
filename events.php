@@ -377,7 +377,7 @@ require_once __DIR__ . "/header.php";
             <div style="display:flex; gap:10px; flex-wrap:nowrap;">
               <button class="btn" type="submit" style="padding: 10px 20px;">Search</button>
               <a class="btn btn-ghost" href="events.php" style="padding: 10px 15px;">Reset</a>
-              <a class="btn btn-ghost" href="events_export.php?<?= http_build_query($_GET) ?>" style="padding: 10px 15px;">CSV</a>
+              <a class="btn btn-ghost" href="events_export.php?<?= http_build_query($_GET) ?>" target="_blank" rel="noopener" style="padding: 10px 15px;">CSV</a>
               <a class="btn btn-ghost" target="_blank" href="events_report.php?<?= http_build_query($_GET) ?>" style="padding: 10px 15px; white-space:nowrap;">Print Report</a>
             </div>
           </div>

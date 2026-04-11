@@ -3,6 +3,11 @@ declare(strict_types=1);
 require_once __DIR__ . "/db.php";
 require_once __DIR__ . "/helpers.php";
 
+// Load church name from config (single source of truth)
+$_cfg = require __DIR__ . "/config.php";
+$appName = $_cfg["app"]["name"] ?? "HAPPY CHURCH RUIRU";
+unset($_cfg);
+
 $error = "";
 if (!isset($pdo) || $pdo === null) {
     $error = isset($db_connect_error) ? $db_connect_error : "Database connection unavailable. Please ensure MySQL is running.";
@@ -67,7 +72,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $success = "Account created! A welcome email with your OTP has been sent. Please <a href='verify_otp.php?id=$newId' style='color:var(--brand2); font-weight:900;'>click here to verify your account now</a>.";
                 
                 // Welcome Notification via Brevo
-                $subj = "Welcome to HAPPY CHURCH RUIRU • Verify Your Account";
+                $subj = "Welcome to " . $appName . " • Verify Your Account";
                 $verifyLink = "https://" . ($_SERVER['HTTP_HOST'] ?? 'happy-church-ruiru-tsln.onrender.com') . "/verify_otp.php?id=$newId";
                 $msg  = "Dear <strong>$username</strong>,<br><br>" .
                         "Welcome to our church family! We are thrilled to have you join us online.<br><br>" .
@@ -84,17 +89,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 }
             }
         } catch (PDOException $e) {
-            // Check specifically for duplicate entry (which happens instantly if a user double-taps on mobile)
-            if ($e->getCode() == 23000) {
-                if (stripos($e->getMessage(), 'email') !== false) {
+            $msg = $e->getMessage();
+            // Check specifically for duplicate entry
+            if (strpos($msg, '23000') !== false || strpos($msg, '1062') !== false) {
+                if (stripos($msg, 'email') !== false) {
                     $error = "This email address is already registered.";
-                } elseif (stripos($e->getMessage(), 'username') !== false) {
+                } elseif (stripos($msg, 'username') !== false) {
                     $error = "This username is already taken.";
                 } else {
                     $error = "An account with these details already exists.";
                 }
             } else {
-                $error = "Database error: " . $e->getMessage();
+                $error = "Database error: " . $msg;
             }
         }
     }
@@ -114,7 +120,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <div style="display:flex;gap:14px;align-items:center;">
 <div class="brand-mark">✝</div>
 <div>
-<div style="font-weight:950;font-size:1.35rem;">Church Events System</div>
+<div style="font-weight:950;font-size:1.35rem;"><?= e($appName) ?></div>
 <div class="small">Create New Account</div>
 </div>
 </div>
@@ -143,6 +149,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <option value="Member">Member</option>
 <option value="Receptionist">Receptionist</option>
 <option value="Volunteer">Volunteer</option>
+<option value="Admin">Admin</option>
 </select>
 </div>
 <div>

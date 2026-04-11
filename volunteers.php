@@ -10,6 +10,8 @@ require_once __DIR__ . "/helpers.php";
 
 $action = $_GET["action"] ?? "";
 $id = isset($_GET["id"]) ? (int)$_GET["id"] : 0;
+$role = strtolower(trim((string)($_SESSION["user"]["role"] ?? "")));
+$isStaff = in_array($role, ["admin", "receptionist"], true);
 
 // Self-healing: Ensure event_id column exists in volunteers table
 try {
@@ -26,7 +28,7 @@ try {
 /* -----------------------
    CLEANUP PAST DATA
 ------------------------ */
-if ($action === "cleanup" && in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])) {
+if ($action === "cleanup" && $isStaff) {
     $stmt = $pdo->prepare("DELETE FROM events WHERE event_date < CURRENT_DATE()");
     $stmt->execute();
     $count = $stmt->rowCount();
@@ -41,8 +43,6 @@ $events = $pdo->query("SELECT id, title, event_date FROM events ORDER BY event_d
 ------------------------ */
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
   csrf_verify();
-  $userRole = $_SESSION["user"]["role"] ?? "";
-
   $mode = $_POST["mode"] ?? "create";
   
   $full_name = trim((string)($_POST["full_name"] ?? ""));
@@ -59,7 +59,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   }
 
   if ($mode === "update") {
-    // Access control removed per open-directory requirement
+    if (!$isStaff) {
+      flash_set("You are not allowed to update volunteer records.", "error");
+      redirect("volunteers.php");
+    }
     $vid = (int)($_POST["id"] ?? 0);
     $stmt = $pdo->prepare("UPDATE volunteers SET full_name=?, phone=?, email=?, event_id=?, ministry=?, availability=?, notes=? WHERE id=?");
     $stmt->execute([$full_name, $phone ?: null, $email ?: null, $event_id, $ministry, $availability, $notes, $vid]);
@@ -102,6 +105,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
    DELETE
 ------------------------ */
 if ($action === "delete" && $id > 0) {
+  if (!$isStaff) {
+    flash_set("You are not allowed to delete volunteer records.", "error");
+    redirect("volunteers.php");
+  }
   $pdo->prepare("DELETE FROM volunteers WHERE id=?")->execute([$id]);
   flash_set("Volunteer deleted.");
   redirect("volunteers.php");
@@ -112,6 +119,10 @@ if ($action === "delete" && $id > 0) {
 ------------------------ */
 $edit = null;
 if ($action === "edit" && $id > 0) {
+  if (!$isStaff) {
+    flash_set("You are not allowed to edit volunteer records.", "error");
+    redirect("volunteers.php");
+  }
   $stmt = $pdo->prepare("SELECT * FROM volunteers WHERE id=?");
   $stmt->execute([$id]);
   $edit = $stmt->fetch();
@@ -119,7 +130,7 @@ if ($action === "edit" && $id > 0) {
 
 // Get logged-in member's email for pre-filling
 $myEmail = "";
-if (!in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])) {
+if (!$isStaff) {
     $myEmailStmt = $pdo->prepare("SELECT email FROM users WHERE id=?");
     $myEmailStmt->execute([(int)$_SESSION["user"]["id"]]);
     $myEmail = $myEmailStmt->fetchColumn() ?: "";
@@ -173,7 +184,7 @@ $rows = $stmt->fetchAll();
 
 // Fetch "My Selections" for Members
 $mySelections = [];
-if (!in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])) {
+if (!$isStaff) {
     $stmtApp = $pdo->prepare("SELECT v.*, e.title as event_title, e.event_date
                               FROM volunteers v
                               LEFT JOIN events e ON v.event_id = e.id
@@ -196,7 +207,7 @@ require_once __DIR__ . "/header.php";
 
 <div class="grid">
   <?php 
-    $isAdmin = true; // Overridden to grant Members identical Admin UI experience
+    $isAdmin = $isStaff;
     $showForm = true;
   ?>
   
@@ -238,7 +249,7 @@ require_once __DIR__ . "/header.php";
               <label class="small">Full Name</label>
               <?php
                 if ($edit) { $defName = $edit["full_name"]; }
-                elseif (!in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])) { $defName = $_SESSION["user"]["username"]; }
+                elseif (!$isStaff) { $defName = $_SESSION["user"]["username"]; }
                 else { $defName = ""; }
               ?>
               <input class="input" name="full_name" required value="<?= e($defName) ?>" placeholder="e.g. John Mwangi">
@@ -258,7 +269,7 @@ require_once __DIR__ . "/header.php";
               <label class="small">Email</label>
               <?php
                 if ($edit) { $defEmail = $edit["email"]; }
-                elseif (!in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])) { $defEmail = $myEmail; }
+                elseif (!$isStaff) { $defEmail = $myEmail; }
                 else { $defEmail = ""; }
               ?>
               <input class="input" type="email" name="email" value="<?= e($defEmail) ?>" placeholder="e.g. name@email.com">
@@ -391,7 +402,7 @@ require_once __DIR__ . "/header.php";
             <div style="display:flex; gap:10px; flex-wrap:nowrap;">
               <button class="btn" type="submit" style="padding: 10px 20px;">Search</button>
               <a class="btn btn-ghost" href="volunteers.php" style="padding: 10px 15px;">Reset</a>
-              <a class="btn btn-ghost" href="volunteers_export.php?<?= e(http_build_query($_GET)) ?>" style="padding: 10px 15px;">CSV</a>
+              <a class="btn btn-ghost" href="volunteers_export.php?<?= e(http_build_query($_GET)) ?>" target="_blank" rel="noopener" style="padding: 10px 15px;">CSV</a>
               <a class="btn btn-ghost" target="_blank" href="volunteers_report.php?<?= e(http_build_query($_GET)) ?>" style="padding: 10px 15px; white-space:nowrap;">Print List</a>
             </div>
           </div>
@@ -402,7 +413,7 @@ require_once __DIR__ . "/header.php";
             <thead>
               <tr>
                 <th>Name</th><th>Ministry</th><th>Phone / Email</th><th>Event</th><th class="hide-mobile">Availability</th>
-                <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
+                <?php if ($isAdmin): ?>
                   <th>Actions</th>
                 <?php endif; ?>
               </tr>
@@ -428,7 +439,7 @@ require_once __DIR__ . "/header.php";
                   <td>
                     <span style="font-weight:800; font-size:0.85rem; color:var(--brand); border-radius: 6px; padding: 4px 8px; background: rgba(46,233,166,0.1);">✓ Registered Successfully</span>
                   </td>
-                  <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
+                  <?php if ($isAdmin): ?>
                     <td class="actions">
                       <a class="btn btn-ghost" href="volunteers.php?action=edit&id=<?= (int)$r["id"] ?>">Edit</a>
                       <a class="btn btn-danger" href="volunteers.php?action=delete&id=<?= (int)$r["id"] ?>"
