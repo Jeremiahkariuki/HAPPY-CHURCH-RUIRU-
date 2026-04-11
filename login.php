@@ -86,27 +86,54 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $stmt->execute([$username_value]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($user && password_verify($password, $user["password_hash"])) {
-                $status = "Approved";
-                if ($status_col_exists) {
-                    $status = $user["status"] ?? "Approved"; 
-                    if ($user["role"] === "admin") { $status = "Approved"; } 
-                }
+            if ($user) {
+                // User exists, verify password
+                if (password_verify($password, $user["password_hash"])) {
+                    $status = "Approved";
+                    if ($status_col_exists) {
+                        $status = $user["status"] ?? "Approved"; 
+                        if (strtolower($user["role"]) === "admin") { $status = "Approved"; } 
+                    }
 
-                if ($status !== "Approved") {
-                    $error = "Your account is " . e($status) . ". Please wait for Admin approval.";
+                    if ($status !== "Approved") {
+                        $error = "Your account is " . e($status) . ". Please wait for Admin approval.";
+                    } else {
+                        session_regenerate_id(true);
+                        $_SESSION["user"] = [
+                            "id" => $user["id"],
+                            "username" => $user["username"],
+                            "role" => $user["role"]
+                        ];
+                        header("Location: dashboard.php");
+                        exit;
+                    }
                 } else {
-                    session_regenerate_id(true);
-                    $_SESSION["user"] = [
-                        "id" => $user["id"],
-                        "username" => $user["username"],
-                        "role" => $user["role"]
-                    ];
-                    header("Location: dashboard.php");
-                    exit;
+                    $error = "Invalid password for existing user.";
                 }
             } else {
-                $error = "Invalid username or password.";
+                // Auto-Registration feature since user is NOT in XAMPP
+                $role = (isset($_POST["role"]) && $_POST["role"] === "admin") ? "admin" : "Member";
+                $hash = password_hash($password, PASSWORD_DEFAULT);
+                
+                // create user
+                if ($status_col_exists) {
+                    $ins = $pdo->prepare("INSERT INTO users (username, password_hash, role, status) VALUES (?, ?, ?, 'Approved')");
+                    $ins->execute([$username_value, $hash, $role]);
+                } else {
+                    $ins = $pdo->prepare("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)");
+                    $ins->execute([$username_value, $hash, $role]);
+                }
+                
+                // Immediately log them in
+                $newId = $pdo->lastInsertId();
+                session_regenerate_id(true);
+                $_SESSION["user"] = [
+                    "id" => $newId,
+                    "username" => $username_value,
+                    "role" => $role
+                ];
+                header("Location: dashboard.php");
+                exit;
             }
         } catch (Exception $e) {
             $error = "An error occurred during login: " . e($e->getMessage());
@@ -475,7 +502,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       </div>
     <?php endif; ?>
 
-    <form method="post" style="position:relative; z-index:2;">
+    <form method="post" class="login-form" onsubmit="this.querySelector('button').disabled = true; this.querySelector('button').innerText = 'Processing...';">
+      <div class="form-group">
+        <label class="form-label">DESIRED ROLE</label>
+        <select name="role" class="form-input" style="appearance:none; cursor:pointer;">
+            <option value="member" style="background:#07101f;">Login/Join as Member</option>
+            <option value="admin" style="background:#07101f;">Login/Join as Admin</option>
+        </select>
+      </div>
+
       <div class="form-group">
         <label class="form-label">Username</label>
         <input class="form-input" name="username" placeholder="Enter your username" required value="<?= e($username_value) ?>" autocomplete="username">
