@@ -8,6 +8,11 @@ require_once __DIR__ . "/db.php";
 require_once __DIR__ . "/csrf.php";
 require_once __DIR__ . "/helpers.php";
 
+// Load church name from config (single source of truth)
+$_cfg = require __DIR__ . "/config.php";
+$appName = $_cfg["app"]["name"] ?? "HAPPY CHURCH RUIRU";
+unset($_cfg);
+
 $action = $_GET["action"] ?? "";
 $id = isset($_GET["id"]) ? (int)$_GET["id"] : 0;
 
@@ -52,9 +57,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }
         }
         
-        $subj = "Event Registration Confirmed - HAPPY CHURCH RUIRU";
+        $subj = "Event Registration Confirmed - " . $appName;
         $msg = "Dear <strong>$full_name</strong>,<br><br>" .
-               "This is to confirm that you have been successfully registered for <strong>HAPPY CHURCH RUIRU</strong>!<br><br>" .
+               "This is to confirm that you have been successfully registered for <strong>" . e($appName) . "</strong>!<br><br>" .
                "📅 <strong>Event:</strong> $eventTitle<br>" .
                "✅ <strong>Status:</strong> $attendance_status<br><br>" .
                "We look forward to seeing you. Thank you and God bless!";
@@ -67,6 +72,24 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   }
 
   redirect("attendees.php");
+}
+
+/* -----------------------
+   CLEANUP PAST DATA
+------------------------ */
+if ($action === "cleanup") {
+    $stmt = $pdo->query("SELECT id FROM events WHERE event_date < CURRENT_DATE()");
+    $pastIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    $count = count($pastIds);
+
+    if ($count > 0) {
+        $in = str_repeat('?,', $count - 1) . '?';
+        $pdo->prepare("DELETE FROM volunteers WHERE event_id IN ($in)")->execute($pastIds);
+        $pdo->prepare("DELETE FROM attendees WHERE event_id IN ($in)")->execute($pastIds);
+        $pdo->prepare("DELETE FROM events WHERE id IN ($in)")->execute($pastIds);
+    }
+    flash_set("Cleanup complete! Removed $count past events along with their attendees/volunteers.");
+    redirect("attendees.php");
 }
 
 /* -----------------------
@@ -165,7 +188,7 @@ require_once __DIR__ . "/header.php";
         </div>
         <div class="small">Track attendance and strengthen community.</div>
 
-        <form method="post" style="margin-top:20px; display:grid; gap:20px;">
+        <form id="edit-form" method="post" autocomplete="off" style="margin-top:20px; display:grid; gap:20px;">
           <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
           <input type="hidden" name="mode" value="<?= $edit ? "update" : "create" ?>">
           <?php if ($edit): ?><input type="hidden" name="id" value="<?= (int)$edit["id"] ?>"><?php endif; ?>
@@ -173,11 +196,11 @@ require_once __DIR__ . "/header.php";
           <div class="grid">
             <div class="col-6">
               <label class="small">Full Name</label>
-              <input class="input" name="full_name" required value="<?= e($edit["full_name"] ?? "") ?>" placeholder="e.g. Jane Doe">
+              <input class="input" name="full_name" required value="<?= e($edit["full_name"] ?? "") ?>" placeholder="e.g. Jane Doe" autocomplete="off">
             </div>
             <div class="col-6">
               <label class="small">Email</label>
-              <input class="input" type="email" name="email" value="<?= e($edit["email"] ?? "") ?>" placeholder="e.g. jane@example.com">
+              <input class="input" type="email" name="email" value="<?= e($edit["email"] ?? "") ?>" placeholder="e.g. jane@example.com" autocomplete="off">
             </div>
 
             <div class="col-4">
@@ -225,8 +248,17 @@ require_once __DIR__ . "/header.php";
   <!-- Bottom: List (Full Width) -->
   <div class="col-12">
     <div class="card">
-      <div style="font-weight:950; font-size:1.4rem;">Attendees List</div>
-      <div class="small">Search, filter, and manage church attendees.</div>
+      <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+        <div>
+            <div style="font-weight:950; font-size:1.4rem;">Attendees List</div>
+            <div class="small">Search, filter, and manage church attendees.</div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <a href="attendees.php?action=cleanup" class="btn btn-danger" style="font-size:0.75rem; padding:8px 16px;">
+            🧹 Cleanup Past Events & Data
+          </a>
+        </div>
+      </div>
 
       <div style="margin-top:20px;">
         <form method="get" class="card" style="background:rgba(255,255,255,.03); border-color:rgba(255,255,255,.05); margin-bottom:20px; padding:20px;">
@@ -297,13 +329,10 @@ require_once __DIR__ . "/header.php";
                     ?>
                     <span style="color:<?= $color ?>; font-weight:800; font-size:0.85rem; <?= $actualStatus === 'Registered' ? 'background:rgba(46,233,166,0.1); padding:4px 8px; border-radius:6px;' : '' ?>">● <?= e($dispStatus) ?></span>
                   </td>
-                  <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
                     <td class="actions">
-                      <a class="btn btn-ghost" href="attendees.php?action=edit&id=<?= (int)$r["id"] ?>">Edit</a>
-                      <a class="btn btn-danger" href="attendees.php?action=delete&id=<?= (int)$r["id"] ?>"
-                         onclick="return confirm('Delete this attendee?');">Delete</a>
+                      <a class="btn btn-ghost" href="attendees.php?action=edit&id=<?= (int)$r["id"] ?>#edit-form">Edit</a>
+                      <a class="btn btn-danger" href="attendees.php?action=delete&id=<?= (int)$r["id"] ?>">Delete</a>
                     </td>
-                  <?php endif; ?>
                 </tr>
               <?php endforeach; ?>
               <?php if (!$rows): ?>

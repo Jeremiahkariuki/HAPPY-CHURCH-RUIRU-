@@ -92,7 +92,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         "username" => $user["username"],
                         "role" => $user["role"]
                     ];
-                    header("Location: dashboard.php");
+                    header("Location: homepage.php");
                     exit;
                 }
             } else {
@@ -489,13 +489,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     </div>
 
     <div class="register-section">
-      <div class="register-card">
+      <div class="register-card" style="background: rgba(46,233,166,.04); border: 1px solid rgba(46,233,166,.15);">
         <div class="register-text">
-          <strong>Join Happy Church Ruiru</strong><br>
-          Create an account to access church events, volunteer opportunities, and community resources.
+          <strong style="color: #2ee9a6;">Join Happy Church Ruiru</strong><br>
+          <span style="font-size: 0.82rem; opacity: 0.8;">Create an account to access events and resources.</span>
         </div>
-        <a href="register.php" class="register-btn">
-          ✨ Create Account
+        <a href="register.php" class="register-btn" style="width: 100%; justify-content: center; margin-top: 10px;">
+          ✨ Create New Account
         </a>
       </div>
     </div>

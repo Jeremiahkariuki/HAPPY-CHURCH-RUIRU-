@@ -25,6 +25,9 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_TIMEOUT => 5, // 5 second timeout to prevent hangs
     ]);
+    
+    // Auto-cleanup past events (will cascade delete related attendees/volunteers)
+    $pdo->exec("DELETE FROM events WHERE event_date < CURRENT_DATE");
 } catch(PDOException $e) {
     $pdo = null;
     $db_connect_error = $e->getMessage();

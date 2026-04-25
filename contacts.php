@@ -4,6 +4,11 @@ declare(strict_types=1);
 require_once __DIR__ . "/auth.php";
 require_login();
 
+// Load church name from config (single source of truth)
+$_cfg = require __DIR__ . "/config.php";
+$appName = $_cfg["app"]["name"] ?? "HAPPY CHURCH RUIRU";
+unset($_cfg);
+
 require_once __DIR__ . "/header.php";
 ?>
 
@@ -207,7 +212,7 @@ require_once __DIR__ . "/header.php";
         <div style="width:52px; height:52px; border-radius:16px; background:linear-gradient(135deg, var(--brand), var(--brand2)); display:grid; place-items:center; font-size:22px; color:#07101f; font-weight:950;">📍</div>
         <div>
             <div style="font-weight:900; font-size:1.2rem;">Visit Us</div>
-            <div class="small">HAPPY Church RUIRU Headquarters</div>
+            <div class="small"><?= e($appName) ?> Headquarters</div>
         </div>
     </div>
     <div class="grid" style="gap:14px;">

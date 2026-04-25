@@ -11,7 +11,7 @@ header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
 header("Expires: 0");
 
-$appName  = "HAPPY CHURCH RUIRU";
+$_cfg = require __DIR__ . "/config.php"; $appName = $_cfg["app"]["name"] ?? "HAPPY CHURCH RUIRU"; unset($_cfg);
 
 $q       = trim((string)($_GET["q"]        ?? ""));
 $statusF = trim((string)($_GET["status"]   ?? ""));
@@ -94,9 +94,9 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
   <!-- Top navigation bar -->
   <div class="no-print" style="display:flex; gap:12px; margin-bottom:30px; justify-content:space-between; align-items:center;">
-    <button class="back-btn" onclick="window.location.href='/church_events_system/dashboard.php';">
-      ← Back to Dashboard
-    </button>
+    <a href="/church_events_system/dashboard.php" class="back-btn" style="text-decoration:none;">
+      ← Return to Main Dashboard
+    </a>
     <button class="print-btn" onclick="window.print()">🖨️ Print Report</button>
   </div>
 

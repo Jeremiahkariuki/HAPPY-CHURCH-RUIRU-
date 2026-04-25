@@ -1,6 +1,19 @@
 <?php
 declare(strict_types=1);
 
+/**
+ * ============================================================
+ * CHURCH CONFIGURATION — SINGLE SOURCE OF TRUTH
+ * ============================================================
+ * To rename the church, simply change the "name" value below.
+ * The new name will instantly reflect across the ENTIRE system:
+ *   login page, dashboard, emails, reports, header, sidebar,
+ *   about page, contacts page, and all notifications.
+ *
+ * Example: change "HAPPY CHURCH RUIRU" to "GRACE CHURCH NAIROBI"
+ * ============================================================
+ */
+
 return [
   "db" => [
     "host" => "127.0.0.1",
@@ -10,6 +23,7 @@ return [
     "charset" => "utf8mb4",
   ],
   "app" => [
-    "name" => "Church Events System",
+    // ✏️  RENAME YOUR CHURCH HERE — changes apply site-wide instantly
+    "name" => "HAPPY CHURCH RUIRU",
   ],
 ];

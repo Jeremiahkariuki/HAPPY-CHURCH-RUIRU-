@@ -7,14 +7,14 @@ require_login();
 require_once __DIR__ . "/db.php";
 require_once __DIR__ . "/helpers.php";
 
-$appName = "HAPPY CHURCH RUIRU";
+$_cfg = require __DIR__ . "/config.php"; $appName = $_cfg["app"]["name"] ?? "HAPPY CHURCH RUIRU"; unset($_cfg);
 $flash = flash_get();
 
 if (file_exists(__DIR__ . '/config_mail_local.php')) {
     include_once __DIR__ . '/config_mail_local.php';
 }
-$local_user = defined('LOCAL_BREVO_USER') ? LOCAL_BREVO_USER : (getenv('GMAIL_USERNAME') ?: 'simonnjoro965@gmail.com');
-$local_pass = defined('LOCAL_BREVO_PASS') ? LOCAL_BREVO_PASS : (getenv('BREVO_PASSWORD') ?: '');
+$local_user = defined('GMAIL_USERNAME') ? GMAIL_USERNAME : (getenv('GMAIL_USERNAME') ?: 'simonnjoro965@gmail.com');
+$local_pass = defined('GMAIL_PASSWORD') ? GMAIL_PASSWORD : (getenv('GMAIL_PASSWORD') ?: '');
 
 // Fetch recipient counts for groups
 $counts = [
@@ -26,14 +26,14 @@ $counts = [
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // Save settings logic
     if (isset($_POST['save_settings'])) {
-        $apiKey = trim($_POST['brevo_api_key'] ?? '');
+        $appPass = trim($_POST['gmail_app_pass'] ?? '');
         $senderEmail = trim($_POST['sender_email'] ?? '');
         
         $configContent = "<?php\n" .
-                        "define('LOCAL_BREVO_USER', '$senderEmail');\n" .
-                        "define('LOCAL_BREVO_PASS', '$apiKey');\n";
+                        "define('GMAIL_USERNAME', '$senderEmail');\n" .
+                        "define('GMAIL_PASSWORD', '$appPass');\n";
         file_put_contents(__DIR__ . '/config_mail_local.php', $configContent);
-        flash_set("Email settings saved successfully! You can now send wedding invitations perfectly.");
+        flash_set("Gmail App Password saved successfully! You can now send notifications directly via your Google Account.");
         redirect("notifications.php");
     }
 
@@ -48,7 +48,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             if ($ok) {
                 flash_set("Test email sent successully to $testEmail! Check your inbox.");
             } else {
-                flash_set("Email failed to send. Please check your Brevo API Key was correctly set in the Render environment variables under MAIL_PASSWORD.", "error");
+                flash_set("Email failed to send. Please check your Gmail App Password.", "error");
             }
         }
         redirect("notifications.php");
@@ -139,31 +139,31 @@ require_once __DIR__ . "/header.php";
 
     <?php if (!$local_pass): ?>
     <div class="card p-4 mb-4" style="background: linear-gradient(135deg, rgba(124,92,255,0.1), rgba(0,255,200,0.05)); border: 2px solid var(--brand2); border-radius: 12px; box-shadow: 0 0 20px rgba(124,92,255,0.3); animation: pulse 2s infinite;">
-        <h3 class="h5 mb-3" style="color: #fff; font-weight: 950;"><span style="color: #ff5c5c;">⚠️ CONNECTION TIMEOUT FIX (REQUIRED)</span></h3>
-        <p style="color: #ddd;">Cloud servers like Render **block standard Gmail**. To send your "Wedding Invitations" to your Gmail app, you **MUST** save a Brevo API Key below once. It takes 20 seconds and fixes the timeout **PERMANENTLY**.</p>
+        <h3 class="h5 mb-3" style="color: #fff; font-weight: 950;"><span style="color: #ff5c5c;">⚠️ GMAIL APP PASSWORD SETUP (REQUIRED)</span></h3>
+        <p style="color: #ddd;">To ensure notifications are sent directly from your Gmail account (and visible in your Sent folder), you <strong>MUST</strong> provide a Google App Password.<br>Standard passwords will not work. See instructions below to generate a 16-character App Password.</p>
         
         <form method="POST" class="row g-3">
             <div class="col-md-5">
                 <input type="email" name="sender_email" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Your Gmail Address" value="<?= e($local_user) ?>" required>
             </div>
             <div class="col-md-5">
-                <input type="password" name="brevo_api_key" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Paste Brevo API Key here..." required>
+                <input type="password" name="gmail_app_pass" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Paste 16-char Gmail App Password here" required>
             </div>
             <div class="col-md-2 text-end">
-                <button type="submit" name="save_settings" class="btn btn-sm btn-outline-primary w-100">🚀 FIX NOW</button>
+                <button type="submit" name="save_settings" class="btn btn-sm btn-outline-primary w-100">🚀 CONNECT</button>
             </div>
             <div class="col-12 mt-2">
-                <a href="https://app.brevo.com/settings/keys/smtp" target="_blank" style="color: var(--brand2); font-weight: 700; text-decoration: none;">1. Click Here to Get Your Key →</a>
-                <span style="color: #888; font-size: 0.8rem; margin-left: 15px;">2. Paste it above and click "FIX NOW". That's all!</span>
+                <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color: var(--brand2); font-weight: 700; text-decoration: none;">1. Click Here to Get Google App Password →</a>
+                <span style="color: #888; font-size: 0.8rem; margin-left: 15px;">2. Follow Google's prompts, generate it for "Mail" / "Windows Computer", and paste it above!</span>
             </div>
         </form>
     </div>
     <style>@keyframes pulse { 0% { box-shadow: 0 0 10px rgba(124,92,255,0.1); } 50% { box-shadow: 0 0 25px rgba(124,92,255,0.4); } 100% { box-shadow: 0 0 10px rgba(124,92,255,0.1); } }</style>
     <?php else: ?>
     <div class="card p-4 mb-4" style="background: rgba(0,255,127,0.05); border: 1px solid rgba(0,255,127,0.3);">
-        <h3 class="h6 mb-2" style="color: #00ff7f;">✅ Email Connection Optimized (HTTP API Active)</h3>
-        <p class="small text-muted mb-3">Your system is now using a 100% reliable cloud delivery method. All wedding invitations will send perfectly.</p>
-        <form method="POST"><button type="submit" name="save_settings" class="btn btn-sm btn-link text-decoration-none p-0">Change Settings</button></form>
+        <h3 class="h6 mb-2" style="color: #00ff7f;">✅ Connected to Gmail Successfully</h3>
+        <p class="small text-muted mb-3">Your system is now actively sending notifications straight from your Gmail account. Messages will be visible in your Gmail 'Sent' folder.</p>
+        <form method="POST"><button type="submit" name="save_settings" class="btn btn-sm btn-link text-decoration-none p-0">Change Setup</button></form>
     </div>
     <?php endif; ?>
 
@@ -222,14 +222,14 @@ require_once __DIR__ . "/header.php";
 
     <div class="col-4">
         <div class="card" style="background:rgba(255,193,7,.05); border-color:rgba(255,193,7,.15);">
-            <h3 style="margin:0 0 10px; color:#ffcc00; font-weight:950; font-size:1.1rem;">Brevo Setup Check</h3>
+            <h3 style="margin:0 0 10px; color:#ffcc00; font-weight:950; font-size:1.1rem;">Gmail Setup Check</h3>
             <p class="small" style="line-height:1.6; color:var(--muted);">
                 If emails are not reaching recipients, please check:
             </p>
             <ul class="small" style="padding-left:18px; color:var(--muted);">
-                <li>Is your <strong>Brevo API Key</strong> set in Render (variable <code>MAIL_PASSWORD</code>)?</li>
-                <li>Is your <strong>Sender Email</strong> (variable <code>MAIL_USERNAME</code>) verified in Brevo?</li>
-                <li>Check your <strong>Spam</strong> folder on the receiving account.</li>
+                <li>Did you generate and input a real <strong>Google App Password</strong>?</li>
+                <li>Do you have <strong>2-Step Verification</strong> turned on for your Google Account?</li>
+                <li>Check your <strong>Sent</strong> folder in Gmail to see your dispatch status.</li>
             </ul>
         </div>
 

@@ -8,6 +8,11 @@ require_once __DIR__ . "/db.php";
 require_once __DIR__ . "/csrf.php";
 require_once __DIR__ . "/helpers.php";
 
+// Load church name from config (single source of truth)
+$_cfg = require __DIR__ . "/config.php";
+$appName = $_cfg["app"]["name"] ?? "HAPPY CHURCH RUIRU";
+unset($_cfg);
+
 $action = $_GET["action"] ?? "";
 $id = isset($_GET["id"]) ? (int)$_GET["id"] : 0;
 $userRole = $_SESSION["user"]["role"] ?? "";
@@ -41,7 +46,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
               
               $subj = "Event Registration Confirmed: " . ($ev['title'] ?? 'Church Event');
               $msg = "Dear <strong>$uName</strong>,<br><br>" .
-                     "You have successfully registered for the following event at <strong>HAPPY CHURCH RUIRU</strong>:<br><br>" .
+                     "You have successfully registered for the following event at <strong>" . e($appName) . "</strong>:<br><br>" .
                      "📅 <strong>Event:</strong> " . e($ev['title'] ?? 'N/A') . "<br>" .
                      "🗓️ <strong>Date:</strong> " . e(format_date($ev['event_date'] ?? '')) . "<br>" .
                      "📍 <strong>Location:</strong> " . e($ev['location'] ?? 'Main Sanctuary') . "<br><br>" .
@@ -154,13 +159,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 /* -----------------------
    CLEANUP PAST DATA
 ------------------------ */
-if ($action === "cleanup" && in_array($userRole, ["admin", "Receptionist"])) {
-    $stmt = $pdo->prepare("DELETE FROM events WHERE event_date < CURRENT_DATE()");
-    $stmt->execute();
-    $count = $stmt->rowCount();
-    flash_set("Cleanup complete! Removed $count past events and their associated data.");
+if ($action === "cleanup") {
+    $stmt = $pdo->query("SELECT id FROM events WHERE event_date < CURRENT_DATE()");
+    $pastIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    $count = count($pastIds);
+
+    if ($count > 0) {
+        $in = str_repeat('?,', $count - 1) . '?';
+        $pdo->prepare("DELETE FROM volunteers WHERE event_id IN ($in)")->execute($pastIds);
+        $pdo->prepare("DELETE FROM attendees WHERE event_id IN ($in)")->execute($pastIds);
+        $pdo->prepare("DELETE FROM events WHERE id IN ($in)")->execute($pastIds);
+    }
+    flash_set("Cleanup complete! Removed $count past events along with their attendees/volunteers.");
     redirect("events.php");
 }
+
+
 
 if ($action === "delete" && $id > 0) {
   // delete via GET (simple). For stricter security, do delete via POST.
@@ -253,20 +267,10 @@ require_once __DIR__ . "/header.php";
         </div>
         <div class="small" style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px;">
           <span>Keep the church calendar organized and inspiring.</span>
-          <?php if (!$edit && in_array($userRole, ["admin", "Receptionist"])): ?>
-            <?php
-              $pastCount = $pdo->query("SELECT COUNT(*) FROM events WHERE event_date < CURRENT_DATE()")->fetchColumn();
-              if ($pastCount > 0):
-            ?>
-              <a href="events.php?action=cleanup" class="btn btn-danger" style="font-size:0.75rem; padding:8px 16px;" 
-                 onclick="return confirm('CAUTION: This will delete ALL past events (<?= (int)$pastCount ?>) and all linked Attendee/Volunteer records. This cannot be undone. Proceed?');">
-                🧹 Cleanup <?= (int)$pastCount ?> Past Events
-              </a>
-            <?php endif; ?>
-          <?php endif; ?>
+
         </div>
 
-        <form method="post" enctype="multipart/form-data" style="margin-top:20px; display:grid; gap:20px;">
+        <form id="edit-form" method="post" enctype="multipart/form-data" style="margin-top:20px; display:grid; gap:20px;">
           <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
           <input type="hidden" name="mode" value="<?= $edit ? "update" : "create" ?>">
           <?php if ($edit): ?>
@@ -355,8 +359,19 @@ require_once __DIR__ . "/header.php";
   <!-- Bottom: List (Full Width) -->
   <div class="col-12">
     <div class="card">
-      <div style="font-weight:950; font-size:1.4rem;">Events List</div>
-      <div class="small">Displaying upcoming and past church events.</div>
+      <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+        <div>
+            <div style="font-weight:950; font-size:1.4rem;">Events List</div>
+            <div class="small">Displaying upcoming and past church events.</div>
+        </div>
+        <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
+        <div style="display:flex; gap:10px;">
+          <a href="events.php?action=cleanup" class="btn btn-danger" style="font-size:0.75rem; padding:8px 16px;">
+            🧹 Cleanup Past Events
+          </a>
+        </div>
+        <?php endif; ?>
+      </div>
 
       <div style="margin-top:20px;">
         <form method="get" class="card" style="background:rgba(255,255,255,.03); border-color:rgba(255,255,255,.05); margin-bottom:20px; padding:20px;">
@@ -413,9 +428,8 @@ require_once __DIR__ . "/header.php";
                   </td>
                   <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
                     <td class="actions">
-                      <a class="btn btn-ghost" href="events.php?action=edit&id=<?= (int)$r["id"] ?>">Edit</a>
-                      <a class="btn btn-danger" href="events.php?action=delete&id=<?= (int)$r["id"] ?>"
-                         onclick="return confirm('Delete this event?');">Delete</a>
+                      <a class="btn btn-ghost" href="events.php?action=edit&id=<?= (int)$r["id"] ?>#edit-form">Edit</a>
+                      <a class="btn btn-danger" href="events.php?action=delete&id=<?= (int)$r["id"] ?>">Delete</a>
                     </td>
                   <?php else: ?>
                     <td class="actions">
@@ -431,6 +445,7 @@ require_once __DIR__ . "/header.php";
                       <?php endif; ?>
                     </td>
                   <?php endif; ?>
+
                 </tr>
               <?php endforeach; ?>
               <?php if (!$rows): ?>

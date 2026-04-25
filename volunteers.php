@@ -28,87 +28,25 @@ try {
 /* -----------------------
    CLEANUP PAST DATA
 ------------------------ */
-if ($action === "cleanup" && $isStaff) {
-    $stmt = $pdo->prepare("DELETE FROM events WHERE event_date < CURRENT_DATE()");
-    $stmt->execute();
-    $count = $stmt->rowCount();
-    flash_set("Cleanup complete! Removed $count past events and their associated records.");
-    redirect("volunteers.php");
-}
+if ($action === "cleanup") {
+    $stmt = $pdo->query("SELECT id FROM events WHERE event_date < CURRENT_DATE()");
+    $pastIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    $count = count($pastIds);
 
-$events = $pdo->query("SELECT id, title, event_date FROM events ORDER BY event_date DESC")->fetchAll();
-
-/* -----------------------
-   CREATE / UPDATE
------------------------- */
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
-  csrf_verify();
-  $mode = $_POST["mode"] ?? "create";
-  
-  $full_name = trim((string)($_POST["full_name"] ?? ""));
-  $email = trim((string)($_POST["email"] ?? ""));
-  $phone = trim((string)($_POST["phone"] ?? ""));
-  $ministry = trim((string)($_POST["ministry"] ?? ""));
-  $event_id = ($_POST["event_id"] ?? "") !== "" ? (int)$_POST["event_id"] : null;
-  $availability = (string)($_POST["availability"] ?? "Both");
-  $notes = trim((string)($_POST["notes"] ?? ""));
-
-  if ($full_name === "" || $ministry === "") {
-    flash_set("Please fill Full Name and Ministry.", "error");
-    redirect("volunteers.php");
-  }
-
-  if ($mode === "update") {
-    if (!$isStaff) {
-      flash_set("You are not allowed to update volunteer records.", "error");
-      redirect("volunteers.php");
+    if ($count > 0) {
+        $in = str_repeat('?,', $count - 1) . '?';
+        $pdo->prepare("DELETE FROM volunteers WHERE event_id IN ($in)")->execute($pastIds);
+        $pdo->prepare("DELETE FROM attendees WHERE event_id IN ($in)")->execute($pastIds);
+        $pdo->prepare("DELETE FROM events WHERE id IN ($in)")->execute($pastIds);
     }
-    $vid = (int)($_POST["id"] ?? 0);
-    $stmt = $pdo->prepare("UPDATE volunteers SET full_name=?, phone=?, email=?, event_id=?, ministry=?, availability=?, notes=? WHERE id=?");
-    $stmt->execute([$full_name, $phone ?: null, $email ?: null, $event_id, $ministry, $availability, $notes, $vid]);
-    flash_set("Volunteer updated.");
-  } else {
-    $stmt = $pdo->prepare("INSERT INTO volunteers (full_name, phone, email, event_id, ministry, availability, notes) VALUES (?,?,?,?,?,?,?)");
-    $stmt->execute([$full_name, $phone ?: null, $email ?: null, $event_id, $ministry, $availability, $notes]);
-    
-    // Auto-Notification: Send confirmation email if email is provided
-    if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $eventTitle = "General Ministry";
-        if ($event_id > 0) {
-            $eStmt = $pdo->prepare("SELECT title, event_date, location FROM events WHERE id=?");
-            $eStmt->execute([$event_id]);
-            $evData = $eStmt->fetch();
-            if ($evData) {
-                $eventTitle = $evData["title"] . " (" . format_date($evData["event_date"]) . ")";
-            }
-        }
-        
-        $subj = "Volunteer Registration Successful - HAPPY CHURCH RUIRU";
-        $msg = "Dear <strong>$full_name</strong>,<br><br>" .
-               "Thank you for registering to serve as a volunteer at <strong>HAPPY CHURCH RUIRU</strong>!<br><br>" .
-               "<strong>Serving Area:</strong> $ministry<br>" .
-               "<strong>Event/Assignment:</strong> $eventTitle<br>" .
-               "<strong>Availability:</strong> $availability<br><br>" .
-               "We are excited to have you on the team. God bless you as you serve!";
-        
-        send_church_email($email, $subj, $msg);
-    }
-
-    flash_set("Volunteer added successfully! " . ($email ? "A confirmation has been sent to " . e($email) : ""));
-
-  }
-
-  redirect("volunteers.php");
+    flash_set("Cleanup complete! Removed $count past events along with their attendees/volunteers.");
+    redirect("volunteers.php");
 }
 
 /* -----------------------
    DELETE
 ------------------------ */
 if ($action === "delete" && $id > 0) {
-  if (!$isStaff) {
-    flash_set("You are not allowed to delete volunteer records.", "error");
-    redirect("volunteers.php");
-  }
   $pdo->prepare("DELETE FROM volunteers WHERE id=?")->execute([$id]);
   flash_set("Volunteer deleted.");
   redirect("volunteers.php");
@@ -119,10 +57,6 @@ if ($action === "delete" && $id > 0) {
 ------------------------ */
 $edit = null;
 if ($action === "edit" && $id > 0) {
-  if (!$isStaff) {
-    flash_set("You are not allowed to edit volunteer records.", "error");
-    redirect("volunteers.php");
-  }
   $stmt = $pdo->prepare("SELECT * FROM volunteers WHERE id=?");
   $stmt->execute([$id]);
   $edit = $stmt->fetch();
@@ -214,32 +148,29 @@ require_once __DIR__ . "/header.php";
   <?php if ($showForm): ?>
     <!-- Top: Form (Full Width) -->
     <div class="col-12">
-      <div class="card">
+        <div class="card">
         <div style="font-weight:950; font-size:1.4rem;">
-          <?php if (!$isAdmin): ?>
-            Volunteers
-          <?php else: ?>
-            Volunteers
-          <?php endif; ?>
+          <?= $edit ? "Edit Volunteer" : "Add New Volunteer" ?>
         </div>
         <div class="small" style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px;">
-          <span><?= !$isAdmin ? "Serve the church community by registering your availability." : "Update the selected volunteer's details." ?></span>
+          <span><?= $edit ? "Update the selected volunteer's details." : "Register a new volunteer profile." ?></span>
 
           <?php if (!$edit && $isAdmin): ?>
             <?php
               $pastCount = $pdo->query("SELECT COUNT(*) FROM events WHERE event_date < CURRENT_DATE()")->fetchColumn();
             ?>
             <?php if ($pastCount > 0): ?>
-              <a href="volunteers.php?action=cleanup" class="btn btn-danger" style="font-size:0.7rem; padding:6px 12px;" 
-                 onclick="return confirm('Note: This will delete ALL past events (<?= (int)$pastCount ?>) and linked participants. Proceed?');">
-                🧹 Cleanup <?= (int)$pastCount ?> Past Events
+            <div style="display:flex; gap:10px;">
+              <a href="volunteers.php?action=cleanup" class="btn btn-danger" style="font-size:0.7rem; padding:6px 12px;">
+                🧹 Cleanup Past Events & Data
               </a>
+            </div>
             <?php endif; ?>
           <?php endif; ?>
 
         </div>
 
-        <form method="post" style="margin-top:20px; display:grid; gap:20px;">
+        <form id="edit-form" method="post" autocomplete="off" style="margin-top:20px; display:grid; gap:20px;">
           <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
           <input type="hidden" name="mode" value="<?= $edit ? "update" : "create" ?>">
           <?php if ($edit): ?><input type="hidden" name="id" value="<?= (int)$edit["id"] ?>"><?php endif; ?>
@@ -249,10 +180,9 @@ require_once __DIR__ . "/header.php";
               <label class="small">Full Name</label>
               <?php
                 if ($edit) { $defName = $edit["full_name"]; }
-                elseif (!$isStaff) { $defName = $_SESSION["user"]["username"]; }
                 else { $defName = ""; }
               ?>
-              <input class="input" name="full_name" required value="<?= e($defName) ?>" placeholder="e.g. John Mwangi">
+              <input class="input" name="full_name" required value="<?= e($defName) ?>" placeholder="e.g. John Mwangi" autocomplete="off">
             </div>
             
             <div class="col-6">
@@ -269,10 +199,9 @@ require_once __DIR__ . "/header.php";
               <label class="small">Email</label>
               <?php
                 if ($edit) { $defEmail = $edit["email"]; }
-                elseif (!$isStaff) { $defEmail = $myEmail; }
                 else { $defEmail = ""; }
               ?>
-              <input class="input" type="email" name="email" value="<?= e($defEmail) ?>" placeholder="e.g. name@email.com">
+              <input class="input" type="email" name="email" value="<?= e($defEmail) ?>" placeholder="e.g. name@email.com" autocomplete="off">
             </div>
          
             <div class="col-4">
@@ -307,13 +236,9 @@ require_once __DIR__ . "/header.php";
           </div>
 
           <div style="display:flex; gap:12px;">
-            <button class="btn" type="submit" style="min-width:180px; padding:12px;">
-                <?php if (!$isAdmin): ?>
-                  Register to Serve
-                <?php else: ?>
-                  Save Changes
-                <?php endif; ?>
-            </button>
+              <button class="btn" type="submit" style="min-width:180px; padding:12px;">
+                <?= $edit ? "Save Changes" : "Add Volunteer" ?>
+              </button>
             <?php if ($edit): ?>
               <a class="btn btn-ghost" href="volunteers.php">Cancel</a>
             <?php endif; ?>
@@ -329,8 +254,17 @@ require_once __DIR__ . "/header.php";
     <?php if (count($mySelections) > 0): ?>
     <div class="col-12" style="margin-top: 20px;">
       <div class="card">
-        <div style="font-weight:950; font-size:1.4rem; color:var(--brand2);">My Volunteer Selections</div>
-        <div class="small" style="margin-bottom:20px;">You have registered to serve in the following areas.</div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+          <div>
+            <div style="font-weight:950; font-size:1.4rem; color:var(--brand2);">My Volunteer Selections</div>
+            <div class="small" style="margin-bottom:20px;">You have registered to serve in the following areas.</div>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <a href="volunteers.php?action=cleanup" class="btn btn-danger" style="font-size:0.75rem; padding:8px 16px;">
+              🧹 Cleanup Past Events & Data
+            </a>
+          </div>
+        </div>
         <div style="overflow-x:auto;">
           <table class="table">
             <thead>
@@ -371,17 +305,10 @@ require_once __DIR__ . "/header.php";
               <div style="font-weight:950; font-size:1.4rem;">Volunteers List</div>
               <div class="small">Search, filter, and manage church serving teams.</div>
           </div>
-          <?php
-            $pastCount = $pdo->query("SELECT COUNT(*) FROM events WHERE event_date < CURRENT_DATE()")->fetchColumn();
-          ?>
-          <?php if ($pastCount > 0): ?>
-            <a href="volunteers.php?action=cleanup" class="btn btn-danger" style="font-size:0.75rem; padding:8px 16px;" 
-               onclick="return confirm('Note: This will delete ALL past events (<?= (int)$pastCount ?>) and linked participants. Proceed?');">
-              🧹 Cleanup <?= (int)$pastCount ?> Past Events
-            </a>
-          <?php endif; ?>
+          <a href="volunteers.php?action=cleanup" class="btn btn-danger" style="font-size:0.75rem; padding:8px 16px;">
+            🧹 Cleanup Past Events & Data
+          </a>
       </div>
-
 
       <div style="margin-top:20px;">
         <form method="get" class="card" style="background:rgba(255,255,255,.03); border-color:rgba(255,255,255,.05); margin-bottom:20px; padding:20px;">
@@ -439,13 +366,10 @@ require_once __DIR__ . "/header.php";
                   <td>
                     <span style="font-weight:800; font-size:0.85rem; color:var(--brand); border-radius: 6px; padding: 4px 8px; background: rgba(46,233,166,0.1);">✓ Registered Successfully</span>
                   </td>
-                  <?php if ($isAdmin): ?>
                     <td class="actions">
-                      <a class="btn btn-ghost" href="volunteers.php?action=edit&id=<?= (int)$r["id"] ?>">Edit</a>
-                      <a class="btn btn-danger" href="volunteers.php?action=delete&id=<?= (int)$r["id"] ?>"
-                         onclick="return confirm('Delete this volunteer?');">Delete</a>
+                      <a class="btn btn-ghost" href="volunteers.php?action=edit&id=<?= (int)$r["id"] ?>#edit-form">Edit</a>
+                      <a class="btn btn-danger" href="volunteers.php?action=delete&id=<?= (int)$r["id"] ?>">Delete</a>
                     </td>
-                  <?php endif; ?>
                 </tr>
               <?php endforeach; ?>
               <?php if (!$rows): ?>
