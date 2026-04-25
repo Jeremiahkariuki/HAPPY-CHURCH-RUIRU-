@@ -207,7 +207,7 @@ require_once __DIR__ . "/header.php";
         <div style="width:52px; height:52px; border-radius:16px; background:linear-gradient(135deg, var(--brand), var(--brand2)); display:grid; place-items:center; font-size:22px; color:#07101f; font-weight:950;">📍</div>
         <div>
             <div style="font-weight:900; font-size:1.2rem;">Visit Us</div>
-            <div class="small">HAPPY Church RUIRU Headquarters</div>
+            <div class="small">LOVE CHURCH Headquarters</div>
         </div>
     </div>
     <div class="grid" style="gap:14px;">

@@ -2,7 +2,7 @@
 
 // Environment-aware configuration
 $rawHost = getenv('DB_HOST') ?: "localhost";
-$db      = getenv('DB_NAME') ?: "church_events_system";
+$db      = getenv('DB_NAME') ?: "LOVE_CHURCH";
 $user    = getenv('DB_USER') ?: "root";
 $pass    = getenv('DB_PASS') !== false ? getenv('DB_PASS') : "";
 $port    = "3306";

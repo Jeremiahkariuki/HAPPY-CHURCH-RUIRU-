@@ -14,7 +14,7 @@ require_once __DIR__ . "/vendor/fpdf/fpdf.php";
 $pdf = new FPDF();
 $pdf->AddPage();
 $pdf->SetFont('Arial','B',16);
-$pdf->Cell(0,10,'Happy Church Ruiru',0,1,'C');
+$pdf->Cell(0,10,'LOVE CHURCH',0,1,'C');
 $pdf->Ln(5);
 
 $pdf->SetFont('Arial','',12);

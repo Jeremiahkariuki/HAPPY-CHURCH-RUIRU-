@@ -41,7 +41,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
               
               $subj = "Event Registration Confirmed: " . ($ev['title'] ?? 'Church Event');
               $msg = "Dear <strong>$uName</strong>,<br><br>" .
-                     "You have successfully registered for the following event at <strong>HAPPY CHURCH RUIRU</strong>:<br><br>" .
+                     "You have successfully registered for the following event at <strong>LOVE CHURCH</strong>:<br><br>" .
                      "📅 <strong>Event:</strong> " . e($ev['title'] ?? 'N/A') . "<br>" .
                      "🗓️ <strong>Date:</strong> " . e(format_date($ev['event_date'] ?? '')) . "<br>" .
                      "📍 <strong>Location:</strong> " . e($ev['location'] ?? 'Main Sanctuary') . "<br><br>" .

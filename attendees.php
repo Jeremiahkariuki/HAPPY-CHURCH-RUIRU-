@@ -52,9 +52,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }
         }
         
-        $subj = "Event Registration Confirmed - HAPPY CHURCH RUIRU";
+        $subj = "Event Registration Confirmed - LOVE CHURCH";
         $msg = "Dear <strong>$full_name</strong>,<br><br>" .
-               "This is to confirm that you have been successfully registered for <strong>HAPPY CHURCH RUIRU</strong>!<br><br>" .
+               "This is to confirm that you have been successfully registered for <strong>LOVE CHURCH</strong>!<br><br>" .
                "📅 <strong>Event:</strong> $eventTitle<br>" .
                "✅ <strong>Status:</strong> $attendance_status<br><br>" .
                "We look forward to seeing you. Thank you and God bless!";

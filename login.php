@@ -92,7 +92,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         "username" => $user["username"],
                         "role" => $user["role"]
                     ];
-                    header("Location: dashboard.php");
+                    header("Location: welcome.php");
                     exit;
                 }
             } else {
@@ -114,7 +114,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Login • Happy Church Ruiru</title>
+<title>Login • LOVE CHURCH</title>
 <link rel="stylesheet" href="style.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -455,7 +455,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     
     <div class="brand-header">
       <div class="brand-icon">✝</div>
-      <h1 class="brand-title">HAPPY CHURCH</h1>
+      <h1 class="brand-title">LOVE CHURCH</h1>
       <div class="brand-subtitle">Church Management System</div>
     </div>
 
@@ -491,7 +491,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <div class="register-section">
       <div class="register-card">
         <div class="register-text">
-          <strong>Join Happy Church Ruiru</strong><br>
+          <strong>Join LOVE CHURCH</strong><br>
           Create an account to access church events, volunteer opportunities, and community resources.
         </div>
         <a href="register.php" class="register-btn">

@@ -83,9 +83,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }
         }
         
-        $subj = "Volunteer Registration Successful - HAPPY CHURCH RUIRU";
+        $subj = "Volunteer Registration Successful - LOVE CHURCH";
         $msg = "Dear <strong>$full_name</strong>,<br><br>" .
-               "Thank you for registering to serve as a volunteer at <strong>HAPPY CHURCH RUIRU</strong>!<br><br>" .
+               "Thank you for registering to serve as a volunteer at <strong>LOVE CHURCH</strong>!<br><br>" .
                "<strong>Serving Area:</strong> $ministry<br>" .
                "<strong>Event/Assignment:</strong> $eventTitle<br>" .
                "<strong>Availability:</strong> $availability<br><br>" .
@@ -362,7 +362,6 @@ require_once __DIR__ . "/header.php";
     <?php endif; ?>
   <?php endif; ?>
 
-  <?php if ($isAdmin): ?>
   <!-- Bottom: List (Full Width) -->
   <div class="col-12">
     <div class="card">
@@ -474,7 +473,6 @@ require_once __DIR__ . "/header.php";
       </div>
     </div>
   </div>
-  <?php endif; ?>
 </div>
 
 

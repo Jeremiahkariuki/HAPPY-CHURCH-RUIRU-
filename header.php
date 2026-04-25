@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . "/helpers.php";
 
-$appName = "HAPPY CHURCH RUIRU";
+$appName = "LOVE CHURCH";
 $current_page = basename($_SERVER["PHP_SELF"]);
 $tab = (string)($_GET["tab"] ?? "events");
 $flash = $flash ?? flash_get();

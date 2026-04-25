@@ -59,7 +59,7 @@ function send_church_email(string $to, string $subject, string $message): bool {
             .header { background: #7c5cff; color: #fff; padding: 15px; border-radius: 8px 8px 0 0; text-align: center; }
             .footer { font-size: 12px; color: #888; margin-top: 20px; text-align: center; }
     </style></head><body><div class='container'>
-            <div class='header'><h2>" . (MAIL_FROM_NAME ?? 'Happy Church Ruiru') . "</h2></div>
+            <div class='header'><h2>" . (MAIL_FROM_NAME ?? 'LOVE CHURCH') . "</h2></div>
             <div class='content'>" . nl2br($message) . "</div>
             <div class='footer'>Sent via Church Management System</div>
     </div></body></html>";

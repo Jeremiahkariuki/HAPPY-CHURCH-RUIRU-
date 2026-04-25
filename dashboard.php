@@ -117,7 +117,7 @@ require_once __DIR__ . "/header.php";
 
 <!-- Hero + KPIs -->
 <div class="hero">
-  <h1 class="heroTitle">HAPPY CHURCH RUIRU</h1>
+  <h1 class="heroTitle">LOVE CHURCH</h1>
   <div class="heroSub">Church Management Dashboard</div>
   <div class="miniGrid">
     <div class="mini"><div class="k">📅 Upcoming Events</div><div class="s">From today onwards</div><div class="t"><?= $upcomingCount ?></div></div>
@@ -141,7 +141,9 @@ require_once __DIR__ . "/header.php";
     <div class="col-12">
       <div class="flash error" style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,77,109,.12); color:#ff4d6d; border:1px solid rgba(255,77,109,.25);">
         <div>⚠️ <strong>Database Structure Outdated:</strong> Some analytics could not load because your database needs an update.</div>
+        <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
         <a href="db_setup.php" class="btn" style="background:#ff4d6d; color:#fff; border:none; padding:8px 16px; font-weight:950; font-size:0.85rem;">🔧 Fix Database Now</a>
+        <?php endif; ?>
       </div>
     </div>
   <?php endif; ?>
@@ -289,14 +291,14 @@ require_once __DIR__ . "/header.php";
   <div class="col-12">
     <div class="card" style="padding:40px 24px;text-align:center;background:radial-gradient(circle at top right,rgba(124,92,255,.15),transparent),radial-gradient(circle at bottom left,rgba(46,233,166,.08),transparent),var(--card);">
       <div style="width:64px;height:64px;border-radius:20px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:grid;place-items:center;font-size:32px;color:#07101f;font-weight:950;margin:0 auto 16px;">✝</div>
-      <h2 style="margin:0;font-weight:950;font-size:2rem;">HAPPY CHURCH RUIRU</h2>
+      <h2 style="margin:0;font-weight:950;font-size:2rem;">LOVE CHURCH</h2>
       <p style="font-size:1.1rem;color:var(--brand2);font-weight:700;margin-top:8px;">Where Faith Finds a Home & Hearts Find Hope</p>
     </div>
   </div>
   <div class="col-8">
     <div class="card" style="height:100%;">
       <h3 style="margin:0 0 14px;font-weight:950;font-size:1.3rem;">Our Mission</h3>
-      <p style="line-height:1.7;font-size:1rem;">At HAPPY Church RUIRU, we are dedicated to building a vibrant, Christ-centered community that empowers individuals to discover their divine purpose. Through our ministries—from vibrant worship to impactful community outreach—we strive to reflect the love of Christ in everything we do.</p>
+      <p style="line-height:1.7;font-size:1rem;">At LOVE CHURCH, we are dedicated to building a vibrant, Christ-centered community that empowers individuals to discover their divine purpose. Through our ministries—from vibrant worship to impactful community outreach—we strive to reflect the love of Christ in everything we do.</p>
       <div style="margin-top:18px;padding-top:14px;border-top:var(--border);font-weight:900;color:var(--brand);">"Transforming lives, one heart at a time."</div>
     </div>
   </div>

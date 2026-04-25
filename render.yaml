@@ -17,7 +17,7 @@ services:
       - key: DB_PASS
         value: "ghlaCM5lBu9AdIqiljwv"
       - key: MAIL_FROM_NAME
-        value: "Happy Church Ruiru"
+        value: "LOVE CHURCH"
       - key: BREVO_USERNAME
         sync: false
       - key: BREVO_PASSWORD

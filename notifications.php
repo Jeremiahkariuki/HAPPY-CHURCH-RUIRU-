@@ -7,7 +7,7 @@ require_login();
 require_once __DIR__ . "/db.php";
 require_once __DIR__ . "/helpers.php";
 
-$appName = "HAPPY CHURCH RUIRU";
+$appName = "LOVE CHURCH";
 $flash = flash_get();
 
 if (file_exists(__DIR__ . '/config_mail_local.php')) {

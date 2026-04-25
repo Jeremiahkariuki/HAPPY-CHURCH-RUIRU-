@@ -1,4 +1,4 @@
--- HAPPY CHURCH RUIRU
+-- LOVE CHURCH
 -- Standalone Setup SQL
 -- Use this to import into phpMyAdmin (localhost/phpmyadmin)
 
