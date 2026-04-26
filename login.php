@@ -484,6 +484,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       <span>256-bit Secure Connection</span>
     </div>
 
+    <?php if (!$db_error): ?>
+    <div style="text-align:center; margin-top: 15px; padding: 10px; background: rgba(46,233,166,0.1); border: 1px solid rgba(46,233,166,0.3); border-radius: 12px; color: #2ee9a6; font-size: 0.85rem; font-weight: 700;">
+      ✅ Cloud Database Connected Successfully
+    </div>
+    <?php endif; ?>
+
     <div class="divider">
       <span>New Member?</span>
     </div>
