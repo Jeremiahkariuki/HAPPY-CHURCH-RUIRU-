@@ -10,7 +10,7 @@ declare(strict_types=1);
  *   login page, dashboard, emails, reports, header, sidebar,
  *   about page, contacts page, and all notifications.
  *
- * Example: change "HAPPY CHURCH RUIRU" to "GRACE CHURCH NAIROBI"
+ * Example: change "LOVE CHURCH" to "GRACE CHURCH NAIROBI"
  * ============================================================
  */
 

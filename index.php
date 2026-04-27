@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_URI'] === '/health' || $_SERVER['REQUEST_URI'] === '/healt
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Happy Church Ruiru • Welcome</title>
+<title>LOVE CHURCH • Welcome</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -298,7 +298,7 @@ if ($_SERVER['REQUEST_URI'] === '/health' || $_SERVER['REQUEST_URI'] === '/healt
   <header>
     <a href="index.php" class="logo">
       <div class="logo-icon">✝</div>
-      <span>Happy Church</span>
+      <span>LOVE CHURCH</span>
     </a>
     <div class="auth-links">
       <a href="login.php" class="btn-login">Sign In</a>
@@ -309,7 +309,7 @@ if ($_SERVER['REQUEST_URI'] === '/health' || $_SERVER['REQUEST_URI'] === '/healt
   <main>
     <div class="pill-badge">Welcome to the Family</div>
     <h1>Connect, Grow & Serve with Us</h1>
-    <p class="subtitle">Join Happy Church Ruiru to seamlessly manage your events, volunteer opportunities, and connect with a vibrant community.</p>
+    <p class="subtitle">Join LOVE CHURCH to seamlessly manage your events, volunteer opportunities, and connect with a vibrant community.</p>
     
     <div class="cta-group">
       <a href="register.php" class="btn-primary">Become a Member</a>

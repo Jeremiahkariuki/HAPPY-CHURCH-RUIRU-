@@ -40,7 +40,7 @@ $active = basename($_SERVER["PHP_SELF"]);
       <span class="burger"></span>
       <span class="burger"></span>
     </button>
-    <div class="topbar-title">Church Events System</div>
+    <div class="topbar-title">Church Management System</div>
     <div class="topbar-right">
       <div class="tag">Secure</div>
     </div>
