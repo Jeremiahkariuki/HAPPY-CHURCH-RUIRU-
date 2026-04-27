@@ -67,7 +67,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 }
                 $newId = (int)$pdo->lastInsertId();
                 $otp = (string)rand(100000, 999999);
-                $pdo->prepare("UPDATE users SET otp_code = ? WHERE id = ?")->execute([$otp, $newId]);
+                try {
+                    $pdo->prepare("UPDATE users SET otp_code = ? WHERE id = ?")->execute([$otp, $newId]);
+                } catch (PDOException $e) {
+                    if (strpos($e->getMessage(), "Unknown column 'otp_code'") !== false) {
+                        $pdo->exec("ALTER TABLE users ADD COLUMN otp_code varchar(10) DEFAULT NULL AFTER status");
+                        $pdo->prepare("UPDATE users SET otp_code = ? WHERE id = ?")->execute([$otp, $newId]);
+                    } else {
+                        throw $e;
+                    }
+                }
 
                 $success = "Account created! A welcome email with your OTP has been sent. Please <a href='verify_otp.php?id=$newId' style='color:var(--brand2); font-weight:900;'>click here to verify your account now</a>.";
                 
