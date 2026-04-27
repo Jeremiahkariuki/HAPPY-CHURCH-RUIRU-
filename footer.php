@@ -30,6 +30,9 @@
   });
 </script>
 
+<!-- Instant.page for lightning-fast SPA-like navigation -->
+<script src="https://instant.page/5.2.0" type="module" integrity="sha384-jnZyxPjiipYXnSU0ygqeac2q7CVYMbh84q0uHVRRxK3jE0xaWzQO/85eE/5G85e" crossorigin="anonymous"></script>
+
 <script src="main.js"></script>
 </body>
 </html>
