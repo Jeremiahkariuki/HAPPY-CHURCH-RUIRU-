@@ -92,7 +92,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         "username" => $user["username"],
                         "role" => $user["role"]
                     ];
-                    header("Location: welcome.php");
+                    header("Location: homepage.php");
                     exit;
                 }
             } else {
@@ -114,7 +114,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Login • LOVE CHURCH</title>
+<title>Login • Happy Church Ruiru</title>
 <link rel="stylesheet" href="style.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -455,7 +455,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     
     <div class="brand-header">
       <div class="brand-icon">✝</div>
-      <h1 class="brand-title">LOVE CHURCH</h1>
+      <h1 class="brand-title">HAPPY CHURCH</h1>
       <div class="brand-subtitle">Church Management System</div>
     </div>
 
@@ -484,18 +484,24 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       <span>256-bit Secure Connection</span>
     </div>
 
+    <?php if (!$db_error): ?>
+    <div style="text-align:center; margin-top: 15px; padding: 10px; background: rgba(46,233,166,0.1); border: 1px solid rgba(46,233,166,0.3); border-radius: 12px; color: #2ee9a6; font-size: 0.85rem; font-weight: 700;">
+      ✅ Cloud Database Connected Successfully
+    </div>
+    <?php endif; ?>
+
     <div class="divider">
       <span>New Member?</span>
     </div>
 
     <div class="register-section">
-      <div class="register-card">
+      <div class="register-card" style="background: rgba(46,233,166,.04); border: 1px solid rgba(46,233,166,.15);">
         <div class="register-text">
-          <strong>Join LOVE CHURCH</strong><br>
-          Create an account to access church events, volunteer opportunities, and community resources.
+          <strong style="color: #2ee9a6;">Join Happy Church Ruiru</strong><br>
+          <span style="font-size: 0.82rem; opacity: 0.8;">Create an account to access events and resources.</span>
         </div>
-        <a href="register.php" class="register-btn">
-          ✨ Create Account
+        <a href="register.php" class="register-btn" style="width: 100%; justify-content: center; margin-top: 10px;">
+          ✨ Create New Account
         </a>
       </div>
     </div>

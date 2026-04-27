@@ -93,8 +93,23 @@ try {
     }
 } catch (Exception $e) { $attRate = 0.0; }
 
+// Load church name from config — change config.php to rename site-wide
+$_cfg = require __DIR__ . "/config.php";
+$appName = $_cfg["app"]["name"] ?? "HAPPY CHURCH RUIRU";
+unset($_cfg);
+
 require_once __DIR__ . "/header.php";
 ?>
+
+<!-- Auto-Clean Lingering Tab Parameters from Cached Browsers -->
+<script>
+  if (window.location.search.includes('tab=')) {
+    // Forcefully remove the tab parameter from the URL bar immediately
+    window.history.replaceState({}, document.title, window.location.pathname);
+    // Hard refresh to completely kill the cached state
+    window.location.replace(window.location.pathname);
+  }
+</script>
 
 <style>
   .hero{ border-radius:var(--radius); background:linear-gradient(135deg,rgba(124,92,255,.18),rgba(46,233,166,.10)); border:var(--border); box-shadow:var(--shadow); padding:18px; margin-bottom:14px; }
@@ -117,7 +132,7 @@ require_once __DIR__ . "/header.php";
 
 <!-- Hero + KPIs -->
 <div class="hero">
-  <h1 class="heroTitle">LOVE CHURCH</h1>
+  <h1 class="heroTitle"><?= e($appName) ?></h1>
   <div class="heroSub">Church Management Dashboard</div>
   <div class="miniGrid">
     <div class="mini"><div class="k">📅 Upcoming Events</div><div class="s">From today onwards</div><div class="t"><?= $upcomingCount ?></div></div>
@@ -141,9 +156,7 @@ require_once __DIR__ . "/header.php";
     <div class="col-12">
       <div class="flash error" style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,77,109,.12); color:#ff4d6d; border:1px solid rgba(255,77,109,.25);">
         <div>⚠️ <strong>Database Structure Outdated:</strong> Some analytics could not load because your database needs an update.</div>
-        <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
         <a href="db_setup.php" class="btn" style="background:#ff4d6d; color:#fff; border:none; padding:8px 16px; font-weight:950; font-size:0.85rem;">🔧 Fix Database Now</a>
-        <?php endif; ?>
       </div>
     </div>
   <?php endif; ?>
@@ -229,139 +242,6 @@ require_once __DIR__ . "/header.php";
       </div>
     </div>
   </div>
-
-<!-- ============================================================
-     CONTACTS TAB
-============================================================ -->
-
-  <div class="col-12">
-    <div class="card" style="background:linear-gradient(135deg,rgba(124,92,255,.12),rgba(46,233,166,.06));margin-bottom:18px;">
-      <h2 style="margin:0; font-weight:950; font-size:1.5rem;">📞 Contact Us</h2>
-      <p class="small" style="margin-top:8px;">We are here to serve and support you. Reach out anytime.</p>
-    </div>
-  </div>
-  <div class="col-4">
-    <div class="card" style="text-align:center; padding:30px 20px;">
-      <div style="width:64px;height:64px;border-radius:20px;background:rgba(124,92,255,.15);border:1px solid rgba(124,92,255,.3);display:grid;place-items:center;font-size:26px;margin:0 auto 16px;">👤</div>
-      <div style="font-weight:950; font-size:1.2rem;">Church Admin</div>
-      <div class="small">Operations & Logistics</div>
-      <div style="font-weight:800; font-size:1.1rem; color:var(--brand2); margin:14px 0;">0715 931 990</div>
-      <div style="display:flex; gap:8px;">
-        <a href="tel:+254715931990" class="btn" style="flex:1;text-align:center;padding:10px;">📞 Call</a>
-        <a href="https://wa.me/254715931990" target="_blank" class="btn" style="flex:1;text-align:center;padding:10px;background:rgba(37,211,102,.12);border-color:rgba(37,211,102,.25);color:#25D366;">💬 WhatsApp</a>
-      </div>
-    </div>
-  </div>
-  <div class="col-4">
-    <div class="card" style="text-align:center; padding:30px 20px; border-color:rgba(124,92,255,.3);">
-      <div style="width:64px;height:64px;border-radius:20px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:grid;place-items:center;font-size:26px;color:#07101f;font-weight:950;margin:0 auto 16px;">✝</div>
-      <div style="font-weight:950; font-size:1.2rem;">Senior Pastor</div>
-      <div class="small">Spiritual Guidance & Prayer</div>
-      <div style="font-weight:800; font-size:1.1rem; color:var(--brand); margin:14px 0;">0715 931 990</div>
-      <div style="display:flex; gap:8px;">
-        <a href="tel:+254715931990" class="btn" style="flex:1;text-align:center;padding:10px;">📞 Call</a>
-        <a href="https://wa.me/254715931990" target="_blank" class="btn" style="flex:1;text-align:center;padding:10px;background:rgba(37,211,102,.12);border-color:rgba(37,211,102,.25);color:#25D366;">💬 WhatsApp</a>
-      </div>
-    </div>
-  </div>
-  <div class="col-4">
-    <div class="card" style="text-align:center; padding:30px 20px;">
-      <div style="width:64px;height:64px;border-radius:20px;background:rgba(46,233,166,.15);border:1px solid rgba(46,233,166,.3);display:grid;place-items:center;font-size:26px;margin:0 auto 16px;">📞</div>
-      <div style="font-weight:950; font-size:1.2rem;">Receptionist</div>
-      <div class="small">Inquiries & Appointments</div>
-      <div style="font-weight:800; font-size:1.1rem; color:var(--brand2); margin:14px 0;">0743 341 474</div>
-      <div style="display:flex; gap:8px;">
-        <a href="tel:+254743341474" class="btn" style="flex:1;text-align:center;padding:10px;">📞 Call</a>
-        <a href="https://wa.me/254743341474" target="_blank" class="btn" style="flex:1;text-align:center;padding:10px;background:rgba(37,211,102,.12);border-color:rgba(37,211,102,.25);color:#25D366;">💬 WhatsApp</a>
-      </div>
-    </div>
-  </div>
-  <div class="col-12" style="margin-top:12px;">
-    <a href="notifications.php" class="card" style="display:block; text-decoration:none; padding:24px; background:linear-gradient(135deg,rgba(124,92,255,.1),rgba(46,233,166,.05)); text-align:center; border: 1px solid rgba(255,255,255,.1);">
-      <div style="font-size:2rem; margin-bottom:12px;">📢</div>
-      <h3 style="margin:0 0 8px; font-weight:950; color:var(--text);">Send Email Broadcast</h3>
-      <p class="small" style="color:var(--muted); margin-bottom:15px;">Broadcast updates to all members, volunteers, and attendees via Gmail.</p>
-      <div class="btn btn-ghost" style="display:inline-block; font-size:0.85rem;">Open Notification Panel →</div>
-    </a>
-  </div>
-<!-- ============================================================
-     ABOUT TAB
-============================================================ -->
-
-  <div class="col-12">
-    <div class="card" style="padding:40px 24px;text-align:center;background:radial-gradient(circle at top right,rgba(124,92,255,.15),transparent),radial-gradient(circle at bottom left,rgba(46,233,166,.08),transparent),var(--card);">
-      <div style="width:64px;height:64px;border-radius:20px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:grid;place-items:center;font-size:32px;color:#07101f;font-weight:950;margin:0 auto 16px;">✝</div>
-      <h2 style="margin:0;font-weight:950;font-size:2rem;">LOVE CHURCH</h2>
-      <p style="font-size:1.1rem;color:var(--brand2);font-weight:700;margin-top:8px;">Where Faith Finds a Home & Hearts Find Hope</p>
-    </div>
-  </div>
-  <div class="col-8">
-    <div class="card" style="height:100%;">
-      <h3 style="margin:0 0 14px;font-weight:950;font-size:1.3rem;">Our Mission</h3>
-      <p style="line-height:1.7;font-size:1rem;">At LOVE CHURCH, we are dedicated to building a vibrant, Christ-centered community that empowers individuals to discover their divine purpose. Through our ministries—from vibrant worship to impactful community outreach—we strive to reflect the love of Christ in everything we do.</p>
-      <div style="margin-top:18px;padding-top:14px;border-top:var(--border);font-weight:900;color:var(--brand);">"Transforming lives, one heart at a time."</div>
-    </div>
-  </div>
-  <div class="col-4">
-    <div class="card" style="height:100%;background:linear-gradient(135deg,var(--brand),#4e36f5);color:#fff;text-align:center;padding:30px 20px;">
-      <div style="font-size:2.5rem;margin-bottom:14px;">📖</div>
-      <div style="font-size:1.2rem;font-style:italic;font-weight:700;line-height:1.4;">"May the God of hope fill you with all joy and peace as you trust in him."</div>
-      <div style="margin-top:14px;font-weight:950;color:var(--brand2);">Romans 15:13</div>
-    </div>
-  </div>
-  <div class="col-6">
-    <div class="card" style="background:rgba(124,92,255,.08);border-color:rgba(124,92,255,.15);height:100%;">
-      <div style="font-size:1.5rem;margin-bottom:10px;">🕊️</div>
-      <div style="font-style:italic;font-size:1rem;line-height:1.6;font-weight:500;">"For I know the plans I have for you," declares the LORD, "plans to prosper you and not to harm you, plans to give you hope and a future."</div>
-      <div style="margin-top:12px;font-weight:900;color:var(--brand);">— Jeremiah 29:11</div>
-    </div>
-  </div>
-  <div class="col-6">
-    <div class="card" style="background:rgba(46,233,166,.06);border-color:rgba(46,233,166,.15);height:100%;">
-      <div style="font-size:1.5rem;margin-bottom:10px;">💡</div>
-      <div style="font-style:italic;font-size:1rem;line-height:1.6;font-weight:500;">"Trust in the LORD with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight."</div>
-      <div style="margin-top:12px;font-weight:900;color:var(--brand2);">— Proverbs 3:5-6</div>
-    </div>
-  </div>
-  <div class="col-6">
-    <div class="card" style="background:rgba(255,193,7,.06);border-color:rgba(255,193,7,.12);height:100%;">
-      <div style="font-size:1.5rem;margin-bottom:10px;">🌟</div>
-      <div style="font-style:italic;font-size:1rem;line-height:1.6;font-weight:500;">"Be strong and courageous. Do not be afraid; do not be discouraged, for the LORD your God will be with you wherever you go."</div>
-      <div style="margin-top:12px;font-weight:900;color:#ffcc00;">— Joshua 1:9</div>
-    </div>
-  </div>
-  <div class="col-6">
-    <div class="card" style="background:rgba(255,77,109,.05);border-color:rgba(255,77,109,.12);height:100%;">
-      <div style="font-size:1.5rem;margin-bottom:10px;">❤️</div>
-      <div style="font-style:italic;font-size:1rem;line-height:1.6;font-weight:500;">"And now these three remain: faith, hope and love. But the greatest of these is love."</div>
-      <div style="margin-top:12px;font-weight:900;color:#ff6b8a;">— 1 Corinthians 13:13</div>
-    </div>
-  </div>
-  <div class="col-6">
-    <div class="card" style="background:rgba(124,92,255,.06);border-color:rgba(124,92,255,.12);height:100%;">
-      <div style="font-size:1.5rem;margin-bottom:10px;">🙏</div>
-      <div style="font-style:italic;font-size:1rem;line-height:1.6;font-weight:500;">"I can do all this through him who gives me strength."</div>
-      <div style="margin-top:12px;font-weight:900;color:var(--brand);">— Philippians 4:13</div>
-    </div>
-  </div>
-  <div class="col-6">
-    <div class="card" style="background:rgba(46,233,166,.05);border-color:rgba(46,233,166,.12);height:100%;">
-      <div style="font-size:1.5rem;margin-bottom:10px;">🌿</div>
-      <div style="font-style:italic;font-size:1rem;line-height:1.6;font-weight:500;">"The LORD is my shepherd, I lack nothing. He makes me lie down in green pastures, he leads me beside quiet waters, he refreshes my soul."</div>
-      <div style="margin-top:12px;font-weight:900;color:var(--brand2);">— Psalm 23:1-3</div>
-    </div>
-  </div>
-  <div class="col-12">
-    <div class="card" style="background:linear-gradient(135deg,rgba(124,92,255,.1),rgba(46,233,166,.05));text-align:center;padding:30px;">
-      <div style="font-size:2rem;margin-bottom:12px;">📜</div>
-      <div style="font-weight:950;font-size:1.1rem;color:var(--brand2);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Daily Encouragement</div>
-      <div style="font-size:1.2rem;font-style:italic;font-weight:600;line-height:1.5;max-width:600px;margin:0 auto;">"Let all things be done decently and in order."</div>
-      <div style="margin-top:12px;font-weight:950;color:var(--brand);">— 1 Corinthians 14:40</div>
-    </div>
-  </div>
-  <div class="col-4"><div class="kpi"><div class="num">1000+</div><div class="lbl">Community Members</div></div></div>
-  <div class="col-4"><div class="kpi" style="background:linear-gradient(135deg,rgba(46,233,166,.2),rgba(124,92,255,.1));"><div class="num">15+</div><div class="lbl">Active Ministries</div></div></div>
-  <div class="col-4"><div class="kpi"><div class="num">Weekly</div><div class="lbl">Community Outreach</div></div></div>
 
 
 </div>

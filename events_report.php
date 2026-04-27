@@ -11,7 +11,7 @@ header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
 header("Expires: 0");
 
-$appName = "LOVE CHURCH";
+$_cfg = require __DIR__ . "/config.php"; $appName = $_cfg["app"]["name"] ?? "HAPPY CHURCH RUIRU"; unset($_cfg);
 $basePath = rtrim(str_replace("\\", "/", dirname((string)($_SERVER["SCRIPT_NAME"] ?? ""))), "/");
 $dashboardHref = ($basePath === "" ? "" : $basePath) . "/dashboard.php";
 

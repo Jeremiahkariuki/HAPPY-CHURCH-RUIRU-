@@ -3,7 +3,10 @@ declare(strict_types=1);
 
 require_once __DIR__ . "/helpers.php";
 
-$appName = "LOVE CHURCH";
+// Load church name from config.php — change it there to rename site-wide
+$_cfg = require __DIR__ . "/config.php";
+$appName = $_cfg["app"]["name"] ?? "HAPPY CHURCH RUIRU";
+unset($_cfg);
 $current_page = basename($_SERVER["PHP_SELF"]);
 $tab = (string)($_GET["tab"] ?? "events");
 $flash = $flash ?? flash_get();

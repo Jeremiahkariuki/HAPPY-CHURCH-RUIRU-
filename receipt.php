@@ -2,6 +2,11 @@
 require_once __DIR__ . "/db.php";
 require_once __DIR__ . "/helpers.php";
 
+// Church name from config — change config.php to rename everywhere
+$_cfg = require __DIR__ . "/config.php";
+$appName = $_cfg["app"]["name"] ?? "HAPPY CHURCH RUIRU";
+unset($_cfg);
+
 $id = (int)($_GET["id"] ?? 0);
 $stmt = $pdo->prepare("SELECT * FROM donations WHERE id=?");
 $stmt->execute([$id]);
@@ -14,7 +19,7 @@ require_once __DIR__ . "/vendor/fpdf/fpdf.php";
 $pdf = new FPDF();
 $pdf->AddPage();
 $pdf->SetFont('Arial','B',16);
-$pdf->Cell(0,10,'LOVE CHURCH',0,1,'C');
+$pdf->Cell(0,10,$appName,0,1,'C');
 $pdf->Ln(5);
 
 $pdf->SetFont('Arial','',12);

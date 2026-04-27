@@ -25,7 +25,73 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_TIMEOUT => 5, // 5 second timeout to prevent hangs
     ]);
+    
+    // Auto-cleanup past events (will cascade delete related attendees/volunteers)
+    $pdo->exec("DELETE FROM events WHERE event_date < CURRENT_DATE");
 } catch(PDOException $e) {
-    $pdo = null;
-    $db_connect_error = $e->getMessage();
+    try {
+        // Advanced Auto-Fallback to Embedded SQLite for Cloud / Zero-Config environments
+        $sqlitePath = __DIR__ . '/church_events.sqlite';
+        $needsSetup = !file_exists($sqlitePath);
+        
+        $pdo = new PDO("sqlite:" . $sqlitePath);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+
+        if ($needsSetup) {
+            $pdo->exec("
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                email TEXT UNIQUE,
+                role TEXT NOT NULL DEFAULT 'user',
+                status TEXT NOT NULL DEFAULT 'Pending',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                otp_code TEXT
+            );
+            CREATE TABLE IF NOT EXISTS events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                event_date DATE NOT NULL,
+                start_time TIME,
+                end_time TIME,
+                location TEXT,
+                category TEXT,
+                status TEXT DEFAULT 'Upcoming',
+                description TEXT,
+                image_path TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS attendees (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                full_name TEXT NOT NULL,
+                phone TEXT,
+                email TEXT,
+                event_id INTEGER NOT NULL,
+                attendance_status TEXT DEFAULT 'Registered',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS volunteers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                full_name TEXT NOT NULL,
+                phone TEXT,
+                email TEXT,
+                event_id INTEGER,
+                ministry TEXT,
+                availability TEXT,
+                notes TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            ");
+            
+            // Seed default admin explicitly for the auto-fallback
+            $adminHash = password_hash('123', PASSWORD_DEFAULT);
+            $stmt = $pdo->prepare("INSERT INTO users (username, password_hash, role, status) VALUES ('admin', ?, 'admin', 'Approved')");
+            $stmt->execute([$adminHash]);
+        }
+    } catch(PDOException $fallbackError) {
+        $pdo = null;
+        $db_connect_error = "MySQL Failed: " . $e->getMessage() . " | SQLite Fallback Failed: " . $fallbackError->getMessage();
+    }
 }

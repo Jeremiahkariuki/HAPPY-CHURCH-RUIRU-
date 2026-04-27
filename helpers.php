@@ -67,32 +67,11 @@ function send_church_email(string $to, string $subject, string $message): bool {
     $success = false;
     $errors = [];
 
-    // --- STEP 1: TRY BREVO FIRST (Most reliable on cloud) ---
-    $b_user = defined('LOCAL_BREVO_USER') ? LOCAL_BREVO_USER : (getenv('BREVO_USERNAME') ?: '');
-    $b_pass = defined('LOCAL_BREVO_PASS') ? LOCAL_BREVO_PASS : (getenv('BREVO_PASSWORD') ?: '');
+    // --- GMAIL NATIVE SETUP ---
+    $g_user = defined('GMAIL_USERNAME') ? GMAIL_USERNAME : (getenv('GMAIL_USERNAME') ?: 'simonnjoro965@gmail.com');
+    $g_pass = defined('GMAIL_PASSWORD') ? GMAIL_PASSWORD : (getenv('GMAIL_PASSWORD') ?: ''); // Must be explicitly set
     
-    if ($b_pass) {
-        try {
-            $ch = curl_init('https://api.brevo.com/v3/smtp/email');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
-                'sender' => ['name' => MAIL_FROM_NAME, 'email' => $b_user],
-                'to' => [['email' => $to]], 'subject' => $subject, 'htmlContent' => $htmlBody
-            ]));
-            curl_setopt($ch, CURLOPT_HTTPHEADER, ['accept: application/json', 'api-key: '.$b_pass, 'content-type: application/json']);
-            $res = curl_exec($ch); $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
-            if ($http_code >= 200 && $http_code < 300) $success = true;
-            else $errors[] = "Brevo Failed ($http_code)";
-        } catch (Exception $e) { $errors[] = "Brevo Exception"; }
-    }
-
-    if ($success) goto finalized;
-
-    // --- STEP 2: TRY GMAIL FALLBACK ---
-    $g_user = getenv('GMAIL_USERNAME') ?: (defined('GMAIL_USERNAME') ? GMAIL_USERNAME : 'simonnjoro965@gmail.com');
-    $g_pass = getenv('GMAIL_PASSWORD') ?: (defined('GMAIL_PASSWORD') ? GMAIL_PASSWORD : 'Sy.123456789.');
-    
-    if ($g_pass && !$success) {
+    if ($g_pass) {
         try {
             $socket = @fsockopen('ssl://smtp.gmail.com', 465, $errno, $errstr, 10);
             if ($socket) {
@@ -111,13 +90,18 @@ function send_church_email(string $to, string $subject, string $message): bool {
                     $h = ["MIME-Version: 1.0", "Content-Type: text/html; charset=UTF-8", "From: ".MAIL_FROM_NAME." <$g_user>", "To: $to", "Subject: $subject"];
                     $write($socket, implode("\r\n", $h) . "\r\n\r\n" . $htmlBody . "\r\n.");
                     if (strpos($read($socket), "250") !== false) $success = true;
-                } else $errors[] = "Gmail Auth Failed";
+                } else {
+                    $errors[] = "Gmail Auth Failed (Check App Password)";
+                }
                 $write($socket, "QUIT"); fclose($socket);
-            } else $errors[] = "Gmail Connection Timeout";
-        } catch (Exception $e) { $errors[] = "Gmail Exception"; }
+            } else {
+                $errors[] = "Gmail Connection Failed (Port 465 Blocked)";
+            }
+        } catch (Exception $e) { $errors[] = "Gmail Exception: " . $e->getMessage(); }
+    } else {
+        $errors[] = "Gmail App Password Setup is Missing";
     }
 
-finalized:
     if (!$success) file_put_contents($logFile, "[$date] FAILED: " . implode(" | ", $errors) . "\n", FILE_APPEND);
     $status = $success ? "[SUCCESS]" : "[FAILED]";
     file_put_contents($logFile, "$status [$date] TO: $to | SUBJECT: $subject\n", FILE_APPEND);

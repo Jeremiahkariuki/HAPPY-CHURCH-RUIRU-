@@ -17,5 +17,13 @@ COPY . /var/www/html/
 RUN chmod -R 755 /var/www/html \
     && chown -R www-data:www-data /var/www/html
 
-# Expose port 10000
-EXPOSE 10000
+# Create a dynamic entrypoint to bind Apache to Render's $PORT variable at runtime
+RUN echo '#!/bin/bash\n\
+target_port=${PORT:-10000}\n\
+sed -i "s/Listen .*/Listen $target_port/" /etc/apache2/ports.conf\n\
+sed -i "s/<VirtualHost .*/<VirtualHost *:$target_port>/" /etc/apache2/sites-available/000-default.conf\n\
+exec apache2-foreground' > /usr/local/bin/start.sh \
+    && chmod +x /usr/local/bin/start.sh
+
+# Use dynamic entrypoint instead of default foreground
+CMD ["/usr/local/bin/start.sh"]
