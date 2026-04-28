@@ -6,7 +6,7 @@ require_login();
 
 // Load church name from config (single source of truth)
 $_cfg = require __DIR__ . "/config.php";
-$appName = $_cfg["app"]["name"] ?? "HAPPY CHURCH RUIRU";
+$appName = $_cfg["app"]["name"] ?? "LOVE CHURCH";
 unset($_cfg);
 
 require_once __DIR__ . "/header.php";

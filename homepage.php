@@ -21,7 +21,7 @@ $user_role = $_SESSION["user"]["role"] ?? 'user';
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Welcome • Happy Church Ruiru</title>
+<title>Welcome • LOVE CHURCH</title>
 <link rel="stylesheet" href="style.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -305,7 +305,7 @@ $user_role = $_SESSION["user"]["role"] ?? 'user';
     <div class="welcome-icon">✨</div>
     <h1 class="welcome-title">Welcome back, <?= e($user_name) ?>!</h1>
     <p class="welcome-subtitle">
-      We are blessed to have you here at Happy Church Ruiru. Connect, grow, and manage your events efficiently.
+      We are blessed to have you here at LOVE CHURCH. Connect, grow, and manage your events efficiently.
     </p>
     <div class="role-badge <?= strtolower($user_role) === 'admin' ? 'admin' : '' ?>">
       ◆ <?= e(ucfirst($user_role)) ?> Access
@@ -330,7 +330,7 @@ $user_role = $_SESSION["user"]["role"] ?? 'user';
       <div class="nav-card-icon">🗓️</div>
       <h3 class="nav-card-title">Discover Events</h3>
       <p class="nav-card-desc">
-        Explore upcoming church events, service times, and special gatherings happening within the community.
+        Explore upcoming LOVE CHURCH, service times, and special gatherings happening within the community.
       </p>
       <div class="nav-card-action">
         View Events <span>→</span>

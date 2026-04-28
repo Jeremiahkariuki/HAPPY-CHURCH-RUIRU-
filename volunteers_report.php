@@ -11,7 +11,7 @@ header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
 header("Expires: 0");
 
-$_cfg = require __DIR__ . "/config.php"; $appName = $_cfg["app"]["name"] ?? "HAPPY CHURCH RUIRU"; unset($_cfg);
+$_cfg = require __DIR__ . "/config.php"; $appName = $_cfg["app"]["name"] ?? "LOVE CHURCH"; unset($_cfg);
 
 $q        = trim((string)($_GET["q"] ?? ""));
 $ministryF = trim((string)($_GET["ministry"] ?? ""));

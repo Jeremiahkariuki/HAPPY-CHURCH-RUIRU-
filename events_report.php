@@ -11,7 +11,7 @@ header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
 header("Expires: 0");
 
-$_cfg = require __DIR__ . "/config.php"; $appName = $_cfg["app"]["name"] ?? "HAPPY CHURCH RUIRU"; unset($_cfg);
+$_cfg = require __DIR__ . "/config.php"; $appName = $_cfg["app"]["name"] ?? "LOVE CHURCH"; unset($_cfg);
 $basePath = rtrim(str_replace("\\", "/", dirname((string)($_SERVER["SCRIPT_NAME"] ?? ""))), "/");
 $dashboardHref = ($basePath === "" ? "" : $basePath) . "/dashboard.php";
 
@@ -78,7 +78,7 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
     <div class="report-header">
-      <h1>Church Events Report</h1>
+      <h1>LOVE CHURCH Report</h1>
       <div class="meta">
         <span>📅 Generated: <strong><?= date("Y-m-d H:i") ?></strong></span>
         <span>👤 System: <strong><?= e($appName) ?></strong></span>

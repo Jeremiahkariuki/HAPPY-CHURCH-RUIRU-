@@ -5,7 +5,7 @@ require_once __DIR__ . "/helpers.php";
 
 // Load church name from config (single source of truth)
 $_cfg = require __DIR__ . "/config.php";
-$appName = $_cfg["app"]["name"] ?? "HAPPY CHURCH RUIRU";
+$appName = $_cfg["app"]["name"] ?? "LOVE CHURCH";
 unset($_cfg);
 
 $error = "";
@@ -111,7 +111,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Register • Happy Church Ruiru</title>
+<title>Register • LOVE CHURCH</title>
 <link rel="stylesheet" href="style.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>

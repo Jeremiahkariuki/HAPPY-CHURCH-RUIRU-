@@ -1,4 +1,4 @@
-# HAPPY CHURCH RUIRU Church Management System
+# LOVE CHURCH Church Management System
 
 A premium, role-based church management system built with PHP and MySQL.
 
@@ -48,4 +48,4 @@ A premium, role-based church management system built with PHP and MySQL.
     - FPDF (included in `vendor/`)
 
 ## License
-Confidential - For use by Happy Church Ruiru.
+Confidential - For use by LOVE CHURCH.
