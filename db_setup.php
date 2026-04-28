@@ -84,15 +84,6 @@ try {
      echo "Status column already exists or could not be added: " . $e->getMessage() . "<br>";
   }
 
-  // Migration: Add otp_code if not exists
-  echo "Checking for otp_code column...<br>";
-  try {
-     $pdo->exec("ALTER TABLE `users` ADD COLUMN `otp_code` varchar(10) DEFAULT NULL AFTER `status` ");
-     echo "Added 'otp_code' column successfully.<br>";
-  } catch (Exception $e) {
-     echo "otp_code column already exists or could not be added.<br>";
-  }
-
   try {
      $pdo->exec("UPDATE `users` SET `status` = 'Approved' WHERE `role` = 'admin' ");
      echo "Updated admin status to Approved.<br>";

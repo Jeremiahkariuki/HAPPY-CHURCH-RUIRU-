@@ -1,0 +1,28 @@
+# Environment & local config
+config_mail_local.php
+cookies.txt
+*.sqlite
+
+# Logs & debug output
+logs/
+*.log
+lhr_out.txt
+pinggy_out.txt
+serveo_out.txt
+tuns_out.txt
+test_login_output.html
+
+# Temp files
+wipe_temp.php
+debug_attendance.php
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Brain/AI context (not needed in prod)
+brain/
