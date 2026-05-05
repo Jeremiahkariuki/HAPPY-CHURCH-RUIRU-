@@ -6,9 +6,12 @@ try {
       throw new Exception("Database connection not established. Check your credentials.");
   }
 
-  // Detect database engine
+  // Detect database driver
   $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
   $isSQLite = ($driver === 'sqlite');
+
+  echo "<h2>🔧 HAPPY CHURCH RUIRU — Database Setup</h2>";
+  echo "<p>Driver: <strong>$driver</strong></p>";
 
   if ($isSQLite) {
     // ── SQLite schema ──
@@ -24,6 +27,8 @@ try {
         otp_code TEXT
       );
     ");
+    echo "✅ users table ready<br>";
+
     $pdo->exec("
       CREATE TABLE IF NOT EXISTS events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,6 +44,8 @@ try {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     ");
+    echo "✅ events table ready<br>";
+
     $pdo->exec("
       CREATE TABLE IF NOT EXISTS attendees (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,6 +57,8 @@ try {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     ");
+    echo "✅ attendees table ready<br>";
+
     $pdo->exec("
       CREATE TABLE IF NOT EXISTS volunteers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,6 +72,8 @@ try {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     ");
+    echo "✅ volunteers table ready<br>";
+
     $pdo->exec("
       CREATE TABLE IF NOT EXISTS donations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,6 +83,8 @@ try {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     ");
+    echo "✅ donations table ready<br>";
+
     $pdo->exec("
       CREATE TABLE IF NOT EXISTS gallery (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -80,7 +93,7 @@ try {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     ");
-    echo "SQLite tables created successfully.<br>";
+    echo "✅ gallery table ready<br>";
 
   } else {
     // ── MySQL schema (one statement at a time) ──
@@ -98,6 +111,8 @@ try {
         UNIQUE KEY `email` (`email`)
       )
     ");
+    echo "✅ users table ready<br>";
+
     $pdo->exec("
       CREATE TABLE IF NOT EXISTS `events` (
         `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -114,6 +129,8 @@ try {
         PRIMARY KEY (`id`)
       )
     ");
+    echo "✅ events table ready<br>";
+
     $pdo->exec("
       CREATE TABLE IF NOT EXISTS `attendees` (
         `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -128,6 +145,8 @@ try {
         CONSTRAINT `attendees_ibfk_1` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE
       )
     ");
+    echo "✅ attendees table ready<br>";
+
     $pdo->exec("
       CREATE TABLE IF NOT EXISTS `volunteers` (
         `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -142,6 +161,8 @@ try {
         PRIMARY KEY (`id`)
       )
     ");
+    echo "✅ volunteers table ready<br>";
+
     $pdo->exec("
       CREATE TABLE IF NOT EXISTS `donations` (
         `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -152,6 +173,8 @@ try {
         PRIMARY KEY (`id`)
       )
     ");
+    echo "✅ donations table ready<br>";
+
     $pdo->exec("
       CREATE TABLE IF NOT EXISTS `gallery` (
         `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -161,23 +184,12 @@ try {
         PRIMARY KEY (`id`)
       )
     ");
-    echo "MySQL tables created successfully.<br>";
+    echo "✅ gallery table ready<br>";
 
-    // MySQL-only migrations
-    try {
-       $pdo->exec("ALTER TABLE `users` ADD COLUMN `otp_code` varchar(10) DEFAULT NULL ");
-       echo "Added 'otp_code' column.<br>";
-    } catch (Exception $e) { echo "otp_code column already exists.<br>"; }
-
-    try {
-       $pdo->exec("ALTER TABLE `events` ADD COLUMN `image_path` VARCHAR(255) AFTER `description` ");
-       echo "Added 'image_path' column to events table.<br>";
-    } catch (Exception $e) { echo "image_path column already exists.<br>"; }
-
-    try {
-       $pdo->exec("ALTER TABLE `volunteers` ADD CONSTRAINT `fk_vol_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE ");
-       echo "Added volunteer event FK.<br>";
-    } catch (Exception $e) { echo "Volunteer FK already exists.<br>"; }
+    // MySQL-specific migrations
+    try { $pdo->exec("ALTER TABLE `events` ADD COLUMN `image_path` VARCHAR(255) AFTER `description`"); echo "Added image_path to events<br>"; } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE `users` ADD COLUMN `otp_code` VARCHAR(10) DEFAULT NULL"); echo "Added otp_code to users<br>"; } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE `volunteers` ADD CONSTRAINT `fk_vol_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE"); echo "Added FK to volunteers<br>"; } catch (Exception $e) {}
   }
 
   // Seed admin user (works for both MySQL and SQLite)
@@ -188,12 +200,14 @@ try {
     $stmt = $pdo->prepare("INSERT IGNORE INTO `users` (`username`, `password_hash`, `role`, `status`) VALUES ('admin', ?, 'admin', 'Approved')");
   }
   $stmt->execute([$adminHash]);
+  echo "✅ Admin user seeded<br>";
 
-  // Ensure admin is Approved
+  // Ensure admin is approved
   $pdo->exec("UPDATE users SET status = 'Approved' WHERE role = 'admin'");
-  echo "Admin user seeded and approved.<br>";
+  echo "✅ Admin status set to Approved<br>";
 
-  echo "<strong style='color:green;'>✅ Database setup and migrations successful! (Engine: " . strtoupper($driver) . ")</strong>";
+  echo "<br><strong style='color:green;'>🎉 Database setup and migrations successful!</strong>";
+  echo "<br><br><a href='login.php'>→ Go to Login</a>";
 
 } catch (Exception $e) {
   echo '<strong style="color:red;">Error: ' . htmlspecialchars($e->getMessage()) . '</strong>';

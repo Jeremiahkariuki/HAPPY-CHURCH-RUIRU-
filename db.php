@@ -23,15 +23,11 @@ try {
     $pdo = new PDO("mysql:host=$host;port=$port;dbname=$db;charset=utf8", $user, $pass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_TIMEOUT => 5,
+        PDO::ATTR_TIMEOUT => 5, // 5 second timeout to prevent hangs
     ]);
     
-    // Auto-cleanup past events (safe — won't error if table doesn't exist yet)
-    try {
-        $pdo->exec("DELETE FROM events WHERE event_date < CURRENT_DATE");
-    } catch (PDOException $cleanupErr) {
-        // Table may not exist yet on first run — ignore safely
-    }
+    // Auto-cleanup past events (will cascade delete related attendees/volunteers)
+    $pdo->exec("DELETE FROM events WHERE event_date < CURRENT_DATE");
 } catch(PDOException $e) {
     try {
         // Advanced Auto-Fallback to Embedded SQLite for Cloud / Zero-Config environments
@@ -54,8 +50,6 @@ try {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 otp_code TEXT
             );
-            ");
-            $pdo->exec("
             CREATE TABLE IF NOT EXISTS events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
@@ -69,8 +63,6 @@ try {
                 image_path TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
-            ");
-            $pdo->exec("
             CREATE TABLE IF NOT EXISTS attendees (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 full_name TEXT NOT NULL,
@@ -80,8 +72,6 @@ try {
                 attendance_status TEXT DEFAULT 'Registered',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
-            ");
-            $pdo->exec("
             CREATE TABLE IF NOT EXISTS volunteers (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 full_name TEXT NOT NULL,
@@ -94,25 +84,8 @@ try {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
             ");
-            $pdo->exec("
-            CREATE TABLE IF NOT EXISTS donations (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                full_name TEXT NOT NULL,
-                amount REAL NOT NULL,
-                payment_method TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            );
-            ");
-            $pdo->exec("
-            CREATE TABLE IF NOT EXISTS gallery (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                image_path TEXT NOT NULL,
-                caption TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            );
-            ");
             
-            // Seed default admin
+            // Seed default admin explicitly for the auto-fallback
             $adminHash = password_hash('123', PASSWORD_DEFAULT);
             $stmt = $pdo->prepare("INSERT INTO users (username, password_hash, role, status) VALUES ('admin', ?, 'admin', 'Approved')");
             $stmt->execute([$adminHash]);
