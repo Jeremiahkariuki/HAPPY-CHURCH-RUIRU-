@@ -10,7 +10,7 @@ require_once __DIR__ . "/helpers.php";
 
 // Load church name from config (single source of truth)
 $_cfg = require __DIR__ . "/config.php";
-$appName = $_cfg["app"]["name"] ?? "LOVE CHURCH";
+$appName = $_cfg["app"]["name"] ?? "HAPPY CHURCH";
 unset($_cfg);
 
 $action = $_GET["action"] ?? "";
@@ -362,7 +362,7 @@ require_once __DIR__ . "/header.php";
       <div style="display:flex; justify-content:space-between; align-items:flex-end;">
         <div>
             <div style="font-weight:950; font-size:1.4rem;">Events List</div>
-            <div class="small">Displaying upcoming and past LOVE CHURCH.</div>
+            <div class="small">Displaying upcoming and past HAPPY CHURCH.</div>
         </div>
         <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
         <div style="display:flex; gap:10px;">

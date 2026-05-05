@@ -19,7 +19,7 @@ define('MAIL_USERNAME', getenv('MAIL_USERNAME') ?: 'simonnjoro965@gmail.com');
 define('MAIL_PASSWORD', getenv('MAIL_PASSWORD') ?: 'Sy.123456789.'); // Replace with Brevo API Key on Render
 // Church name from config — change config.php "name" to update everywhere
 $_mailCfg = require __DIR__ . '/config.php';
-define('MAIL_FROM_NAME', getenv('MAIL_FROM_NAME') ?: ($_mailCfg['app']['name'] ?? 'LOVE CHURCH'));
+define('MAIL_FROM_NAME', getenv('MAIL_FROM_NAME') ?: ($_mailCfg['app']['name'] ?? 'HAPPY CHURCH'));
 unset($_mailCfg);
 define('MAIL_ENCRYPTION', getenv('MAIL_ENCRYPTION') ?: 'tls');
 

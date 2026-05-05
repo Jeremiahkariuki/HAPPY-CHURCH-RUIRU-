@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . "/db.php";
 
-echo "<h1>🛠️ LOVE CHURCH - Database Repair</h1>";
+echo "<h1>🛠️ HAPPY CHURCH - Database Repair</h1>";
 echo "<pre>";
 
 if (!$pdo) {

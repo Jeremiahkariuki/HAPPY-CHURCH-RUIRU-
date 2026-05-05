@@ -10,7 +10,7 @@ declare(strict_types=1);
  *   login page, dashboard, emails, reports, header, sidebar,
  *   about page, contacts page, and all notifications.
  *
- * Example: change "LOVE CHURCH" to "GRACE CHURCH NAIROBI"
+ * Example: change "HAPPY CHURCH RUIRU" to "GRACE CHURCH NAIROBI"
  * ============================================================
  */
 
@@ -24,6 +24,6 @@ return [
   ],
   "app" => [
     // ✏️  RENAME YOUR CHURCH HERE — changes apply site-wide instantly
-    "name" => "LOVE CHURCH",
+    "name" => "HAPPY CHURCH RUIRU",
   ],
 ];

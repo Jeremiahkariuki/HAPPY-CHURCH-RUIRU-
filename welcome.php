@@ -14,7 +14,7 @@ $role = $_SESSION["user"]["role"] ?? "Member";
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Welcome Portal • LOVE CHURCH</title>
+<title>Welcome Portal • HAPPY CHURCH</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -251,7 +251,7 @@ $role = $_SESSION["user"]["role"] ?? "Member";
 
     <div class="brand-icon">✝</div>
     
-    <h1 class="welcome-title">Welcome to LOVE CHURCH</h1>
+    <h1 class="welcome-title">Welcome to HAPPY CHURCH</h1>
     
     <p class="welcome-subtitle">
       Hello <strong><?= htmlspecialchars($username) ?></strong>, we are so incredibly blessed to have you here. Step inside to manage events, discover volunteer opportunities, and stay connected.

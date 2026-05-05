@@ -95,7 +95,7 @@ try {
 
 // Load church name from config — change config.php to rename site-wide
 $_cfg = require __DIR__ . "/config.php";
-$appName = $_cfg["app"]["name"] ?? "LOVE CHURCH";
+$appName = $_cfg["app"]["name"] ?? "HAPPY CHURCH";
 unset($_cfg);
 
 require_once __DIR__ . "/header.php";

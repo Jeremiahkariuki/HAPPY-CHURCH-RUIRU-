@@ -114,7 +114,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Login • LOVE CHURCH</title>
+<title>Login • HAPPY CHURCH</title>
 <link rel="stylesheet" href="style.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -455,7 +455,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     
     <div class="brand-header">
       <div class="brand-icon">✝</div>
-      <h1 class="brand-title">LOVE CHURCH</h1>
+      <h1 class="brand-title">HAPPY CHURCH</h1>
       <div class="brand-subtitle">Church Management System</div>
     </div>
 
@@ -497,7 +497,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <div class="register-section">
       <div class="register-card" style="background: rgba(46,233,166,.04); border: 1px solid rgba(46,233,166,.15);">
         <div class="register-text">
-          <strong style="color: #2ee9a6;">Join LOVE CHURCH</strong><br>
+          <strong style="color: #2ee9a6;">Join HAPPY CHURCH</strong><br>
           <span style="font-size: 0.82rem; opacity: 0.8;">Create an account to access events and resources.</span>
         </div>
         <a href="register.php" class="register-btn" style="width: 100%; justify-content: center; margin-top: 10px;">

@@ -4,7 +4,7 @@ require_once __DIR__ . "/helpers.php";
 
 // Church name from config — change config.php to rename everywhere
 $_cfg = require __DIR__ . "/config.php";
-$appName = $_cfg["app"]["name"] ?? "LOVE CHURCH";
+$appName = $_cfg["app"]["name"] ?? "HAPPY CHURCH";
 unset($_cfg);
 
 $id = (int)($_GET["id"] ?? 0);
