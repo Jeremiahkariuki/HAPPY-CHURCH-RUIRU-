@@ -21,14 +21,24 @@ $rows  = [];
 ========================== */
 $today = date("Y-m-d");
 $dbErr = false;
+$isSQLite = ($pdo && $pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite');
 
 try {
-    $eventsMonthly = $pdo ? $pdo->query("
-      SELECT DATE_FORMAT(event_date, '%Y-%m') AS ym, COUNT(*) AS c
-      FROM events
-      WHERE event_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-      GROUP BY ym ORDER BY ym ASC
-    ")->fetchAll(PDO::FETCH_ASSOC) : [];
+    if ($isSQLite) {
+        $eventsMonthly = $pdo ? $pdo->query("
+          SELECT strftime('%Y-%m', event_date) AS ym, COUNT(*) AS c
+          FROM events
+          WHERE event_date >= DATE('now', '-6 months')
+          GROUP BY ym ORDER BY ym ASC
+        ")->fetchAll(PDO::FETCH_ASSOC) : [];
+    } else {
+        $eventsMonthly = $pdo ? $pdo->query("
+          SELECT DATE_FORMAT(event_date, '%Y-%m') AS ym, COUNT(*) AS c
+          FROM events
+          WHERE event_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+          GROUP BY ym ORDER BY ym ASC
+        ")->fetchAll(PDO::FETCH_ASSOC) : [];
+    }
 } catch (Exception $e) { $eventsMonthly = []; $dbErr = true; }
 
 $monthLabels = []; $monthCounts = [];
@@ -42,10 +52,17 @@ $attLabels = []; $attCounts = [];
 foreach ($attStatus as $r) { $attLabels[] = (string)($r["s"] ?: "Unknown"); $attCounts[] = (int)$r["c"]; }
 
 try {
-    $eventsDaily30 = $pdo ? $pdo->query("
-      SELECT DATE(event_date) AS d, COUNT(*) AS c FROM events
-      WHERE event_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY d ORDER BY d ASC
-    ")->fetchAll(PDO::FETCH_ASSOC) : [];
+    if ($isSQLite) {
+        $eventsDaily30 = $pdo ? $pdo->query("
+          SELECT DATE(event_date) AS d, COUNT(*) AS c FROM events
+          WHERE event_date >= DATE('now', '-30 days') GROUP BY d ORDER BY d ASC
+        ")->fetchAll(PDO::FETCH_ASSOC) : [];
+    } else {
+        $eventsDaily30 = $pdo ? $pdo->query("
+          SELECT DATE(event_date) AS d, COUNT(*) AS c FROM events
+          WHERE event_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY d ORDER BY d ASC
+        ")->fetchAll(PDO::FETCH_ASSOC) : [];
+    }
 } catch (Exception $e) { $eventsDaily30 = []; $dbErr = true; }
 
 $dailyLabels30 = []; $dailyCounts30 = [];
@@ -68,8 +85,9 @@ foreach ($attsByEvent as $r) { $attsEventLabels[] = (string)$r["t"]; $attsEventC
 $eventsCount   = (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM events")->fetchColumn() ?: 0) : 0);
 $volsCount     = (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM volunteers")->fetchColumn() ?: 0) : 0);
 $attsCount     = (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM attendees")->fetchColumn() ?: 0) : 0);
-$upcomingCount = (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM events WHERE event_date >= CURDATE()")->fetchColumn() ?: 0) : 0);
-$todayCount    = (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM events WHERE event_date = CURDATE()")->fetchColumn() ?: 0) : 0);
+$curdateExpr = $isSQLite ? "DATE('now')" : "CURDATE()";
+$upcomingCount = (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM events WHERE event_date >= $curdateExpr")->fetchColumn() ?: 0) : 0);
+$todayCount    = (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM events WHERE event_date = $curdateExpr")->fetchColumn() ?: 0) : 0);
 $completedCount= (int)($pdo ? ($pdo->query("SELECT COUNT(*) FROM events WHERE status = 'Completed'")->fetchColumn() ?: 0) : 0);
 // Functional Attendance Rate: (Attended / Total Registered) for COMPLETED events only
 try {

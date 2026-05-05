@@ -12,13 +12,23 @@ require_once __DIR__ . "/helpers.php";
 try {
   $pdo->query("SELECT 1 FROM gallery LIMIT 1");
 } catch (Exception $e) {
-  $pdo->exec("CREATE TABLE IF NOT EXISTS `gallery` (
-    `id` int(11) NOT NULL AUTO_INCREMENT,
-    `image_path` varchar(255) NOT NULL,
-    `caption` varchar(255) DEFAULT NULL,
-    `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-    PRIMARY KEY (`id`)
-  )");
+  $isSQLiteG = ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite');
+  if ($isSQLiteG) {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS gallery (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      image_path TEXT NOT NULL,
+      caption TEXT DEFAULT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )");
+  } else {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS `gallery` (
+      `id` int(11) NOT NULL AUTO_INCREMENT,
+      `image_path` varchar(255) NOT NULL,
+      `caption` varchar(255) DEFAULT NULL,
+      `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+      PRIMARY KEY (`id`)
+    )");
+  }
 }
 
 $action = $_GET["action"] ?? "";

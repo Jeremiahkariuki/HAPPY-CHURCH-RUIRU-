@@ -18,8 +18,7 @@ try {
     $pdo->query("SELECT event_id FROM volunteers LIMIT 1");
 } catch (Exception $e) {
     try {
-        $pdo->exec("ALTER TABLE `volunteers` ADD COLUMN `event_id` int(11) DEFAULT NULL AFTER `email` ");
-        $pdo->exec("ALTER TABLE `volunteers` ADD CONSTRAINT `fk_vol_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE ");
+        $pdo->exec("ALTER TABLE `volunteers` ADD COLUMN `event_id` int(11) DEFAULT NULL");
     } catch (Exception $e2) {
         // Silently fail if events table doesn't exist yet, but it should.
     }
@@ -29,7 +28,9 @@ try {
    CLEANUP PAST DATA
 ------------------------ */
 if ($action === "cleanup") {
-    $stmt = $pdo->query("SELECT id FROM events WHERE event_date < CURRENT_DATE()");
+    $isSQLite = ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite');
+    $dateExpr = $isSQLite ? "DATE('now')" : "CURRENT_DATE()";
+    $stmt = $pdo->query("SELECT id FROM events WHERE event_date < $dateExpr");
     $pastIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
     $count = count($pastIds);
 
@@ -157,7 +158,9 @@ require_once __DIR__ . "/header.php";
 
           <?php if (!$edit && $isAdmin): ?>
             <?php
-              $pastCount = $pdo->query("SELECT COUNT(*) FROM events WHERE event_date < CURRENT_DATE()")->fetchColumn();
+              $isSQLiteV = ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite');
+              $dateExprV = $isSQLiteV ? "DATE('now')" : "CURRENT_DATE()";
+              $pastCount = $pdo->query("SELECT COUNT(*) FROM events WHERE event_date < $dateExprV")->fetchColumn();
             ?>
             <?php if ($pastCount > 0): ?>
             <div style="display:flex; gap:10px;">
