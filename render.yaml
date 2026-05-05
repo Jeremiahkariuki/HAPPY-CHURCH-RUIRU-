@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: love-church
+    name: happy-church-ruiru
     env: docker
     plan: free
     branch: main
