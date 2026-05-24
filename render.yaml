@@ -18,11 +18,17 @@ services:
         value: "ghlaCM5lBu9AdIqiljwv"
       - key: MAIL_FROM_NAME
         value: "HAPPY CHURCH"
-      - key: BREVO_USERNAME
-        sync: false
-      - key: BREVO_PASSWORD
-        sync: false
       - key: GMAIL_USERNAME
         value: "simonnjoro965@gmail.com"
       - key: GMAIL_PASSWORD
-        value: "Sy.123456789."
+        value: "idjg ffty wrcl idmn"
+      - key: MAIL_HOST
+        value: "smtp-relay.brevo.com"
+      - key: MAIL_PORT
+        value: "2525"
+      - key: MAIL_USERNAME
+        value: "simonnjoro965@gmail.com"
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_REPLY_TO
+        value: "simonnjoro965@gmail.com"

@@ -23,5 +23,8 @@ define('MAIL_FROM_NAME', getenv('MAIL_FROM_NAME') ?: ($_mailCfg['app']['name'] ?
 unset($_mailCfg);
 define('MAIL_ENCRYPTION', getenv('MAIL_ENCRYPTION') ?: 'tls');
 
+// Reply-To address — recipients who reply will send to this address
+define('MAIL_REPLY_TO', getenv('MAIL_REPLY_TO') ?: (defined('GMAIL_USERNAME') ? GMAIL_USERNAME : 'simonnjoro965@gmail.com'));
+
 // Log setting
 define('MAIL_LOG_FILE', __DIR__ . '/logs/mail.log');
