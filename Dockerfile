@@ -1,7 +1,9 @@
 FROM php:8.2-apache
 
-# Install required PHP extensions for the project
-RUN docker-php-ext-install pdo pdo_mysql
+# Install required PHP extensions (including IMAP for reply inbox)
+RUN apt-get update && apt-get install -y libc-client-dev libkrb5-dev && rm -rf /var/lib/apt/lists/*
+RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
+    && docker-php-ext-install pdo pdo_mysql imap
 
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite

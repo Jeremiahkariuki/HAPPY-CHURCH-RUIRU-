@@ -10,6 +10,7 @@ unset($_cfg);
 $current_page = basename($_SERVER["PHP_SELF"]);
 $tab = (string)($_GET["tab"] ?? "events");
 $flash = $flash ?? flash_get();
+$sysVersion = @file_exists(__DIR__ . '/version.txt') ? trim(file_get_contents(__DIR__ . '/version.txt')) : '1.0.0';
 
 function isActiveTab(string $t, string $currentTab, string $page): bool {
   return $page === "dashboard.php" && $currentTab === $t;
@@ -22,7 +23,7 @@ function isActiveTab(string $t, string $currentTab, string $page): bool {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title><?= e($appName) ?></title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⛪</text></svg>">
-  <link rel="stylesheet" href="style.css?v=<?= filemtime(__DIR__ . '/style.css') ?>" />
+  <link rel="stylesheet" href="style.css?v=<?= $sysVersion ?>-<?= filemtime(__DIR__ . '/style.css') ?>" />
   <style>
     /* Premium drawer */
     .drawer-overlay{
@@ -232,7 +233,10 @@ function isActiveTab(string $t, string $currentTab, string $page): bool {
       </div>
     </div>
   </div>
-  <div class="tag">Secure</div>
+  <div class="tag" style="display: flex; align-items: center; gap: 8px;">
+    <span style="opacity: 0.6; font-size: 0.7rem; font-weight: 700;"><?= e($sysVersion) ?></span>
+    <span class="tag-pill" style="background: var(--brand2); color: #07101f; padding: 2px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: 900;">LIVE</span>
+  </div>
 </header>
 
 <!-- ✅ IMPORTANT: Keep MAIN OPEN (do NOT close here) -->

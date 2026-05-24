@@ -1,30 +1,52 @@
 <?php
 /**
- * Gmail SMTP Configuration
+ * Mail Configuration — Gmail + Brevo Relay
  * 
- * To send real emails via Gmail:
- * 1. Go to your Google Account > Security.
- * 2. Enable 2-Step Verification.
- * 3. Search for "App Passwords".
- * 4. Generate a new password for "Mail" on your "Windows Computer".
- * 5. Paste that 16-character password below.
+ * Gmail credentials can be set via:
+ *   1. config_mail_local.php (dashboard UI)
+ *   2. Environment variables (Render)
+ * 
+ * All define() calls are guarded to prevent conflicts.
  */
 
-/**
- * Brevo SMTP Configuration (Professional Relay)
- */
-define('MAIL_HOST', getenv('MAIL_HOST') ?: 'smtp-relay.brevo.com');
-define('MAIL_PORT', (int)(getenv('MAIL_PORT') ?: 2525)); // Port 2525 is often more stable on cloud platforms like Render
-define('MAIL_USERNAME', getenv('MAIL_USERNAME') ?: 'simonnjoro965@gmail.com');
-define('MAIL_PASSWORD', getenv('MAIL_PASSWORD') ?: 'Sy.123456789.'); // Replace with Brevo API Key on Render
-// Church name from config — change config.php "name" to update everywhere
-$_mailCfg = require __DIR__ . '/config.php';
-define('MAIL_FROM_NAME', getenv('MAIL_FROM_NAME') ?: ($_mailCfg['app']['name'] ?? 'HAPPY CHURCH'));
-unset($_mailCfg);
-define('MAIL_ENCRYPTION', getenv('MAIL_ENCRYPTION') ?: 'tls');
+// --- Gmail credentials (may already be set by config_mail_local.php) ---
+if (!defined('GMAIL_USERNAME')) {
+    define('GMAIL_USERNAME', getenv('GMAIL_USERNAME') ?: '');
+}
+if (!defined('GMAIL_PASSWORD')) {
+    define('GMAIL_PASSWORD', getenv('GMAIL_PASSWORD') ?: '');
+}
 
-// Reply-To address — recipients who reply will send to this address
-define('MAIL_REPLY_TO', getenv('MAIL_REPLY_TO') ?: (defined('GMAIL_USERNAME') ? GMAIL_USERNAME : 'simonnjoro965@gmail.com'));
+// --- Brevo / Generic SMTP Relay ---
+if (!defined('MAIL_HOST')) {
+    define('MAIL_HOST', getenv('MAIL_HOST') ?: 'smtp-relay.brevo.com');
+}
+if (!defined('MAIL_PORT')) {
+    define('MAIL_PORT', (int)(getenv('MAIL_PORT') ?: 2525));
+}
+if (!defined('MAIL_USERNAME')) {
+    define('MAIL_USERNAME', getenv('MAIL_USERNAME') ?: '');
+}
+if (!defined('MAIL_PASSWORD')) {
+    define('MAIL_PASSWORD', getenv('MAIL_PASSWORD') ?: '');
+}
+if (!defined('MAIL_ENCRYPTION')) {
+    define('MAIL_ENCRYPTION', getenv('MAIL_ENCRYPTION') ?: 'tls');
+}
 
-// Log setting
-define('MAIL_LOG_FILE', __DIR__ . '/logs/mail.log');
+// --- Church display name (from config.php) ---
+if (!defined('MAIL_FROM_NAME')) {
+    $_mailCfg = require __DIR__ . '/config.php';
+    define('MAIL_FROM_NAME', getenv('MAIL_FROM_NAME') ?: ($_mailCfg['app']['name'] ?? 'HAPPY CHURCH'));
+    unset($_mailCfg);
+}
+
+// --- Reply-To: recipients reply to this address ---
+if (!defined('MAIL_REPLY_TO')) {
+    define('MAIL_REPLY_TO', getenv('MAIL_REPLY_TO') ?: (GMAIL_USERNAME ?: 'simonnjoro965@gmail.com'));
+}
+
+// --- Log file path ---
+if (!defined('MAIL_LOG_FILE')) {
+    define('MAIL_LOG_FILE', __DIR__ . '/logs/mail.log');
+}

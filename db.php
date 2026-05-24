@@ -20,7 +20,7 @@ if (strpos($rawHost, 'mysql://') === 0) {
 }
 
 try {
-    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$db;charset=utf8", $user, $pass, [
+    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4", $user, $pass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_TIMEOUT => 5, // 5 second timeout to prevent hangs
@@ -81,6 +81,17 @@ try {
                 ministry TEXT,
                 availability TEXT,
                 notes TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS email_replies (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                from_email TEXT NOT NULL,
+                from_name TEXT DEFAULT '',
+                subject TEXT NOT NULL,
+                body TEXT NOT NULL,
+                received_at DATETIME NOT NULL,
+                is_read INTEGER DEFAULT 0,
+                gmail_uid TEXT UNIQUE,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
             ");

@@ -16,12 +16,31 @@ if (file_exists(__DIR__ . '/config_mail_local.php')) {
 $local_user = defined('GMAIL_USERNAME') ? GMAIL_USERNAME : (getenv('GMAIL_USERNAME') ?: 'simonnjoro965@gmail.com');
 $local_pass = defined('GMAIL_PASSWORD') ? GMAIL_PASSWORD : (getenv('GMAIL_PASSWORD') ?: '');
 
-// Fetch recipient counts for groups
-$counts = [
-    'members'    => (int)$pdo->query("SELECT COUNT(*) FROM users WHERE status = 'Approved' AND email IS NOT NULL AND email != ''")->fetchColumn(),
-    'volunteers' => (int)$pdo->query("SELECT COUNT(*) FROM volunteers WHERE email IS NOT NULL AND email != ''")->fetchColumn(),
-    'attendees'  => (int)$pdo->query("SELECT COUNT(*) FROM attendees WHERE email IS NOT NULL AND email != ''")->fetchColumn()
-];
+// Ensure database connection is active
+if (!isset($pdo) || !$pdo) {
+    require_once __DIR__ . "/header.php";
+    echo "<div class='card p-4' style='border: 1px solid var(--danger); background: rgba(255, 77, 109, 0.05);'>";
+    echo "<h2 style='color: var(--danger);'>⚠️ Database Connection Failed</h2>";
+    echo "<p>Most notification features require a working database. Please check your setup in <b>db_setup.php</b>.</p>";
+    echo "</div>";
+    require_once __DIR__ . "/footer.php";
+    exit;
+}
+
+// Ensure replies table exists
+ensure_replies_table($pdo);
+
+// Fetch recipient counts for groups with fallback
+$counts = ['members' => 0, 'volunteers' => 0, 'attendees' => 0];
+try {
+    $counts['members']    = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE status = 'Approved' AND email IS NOT NULL AND email != ''")->fetchColumn();
+} catch (Exception $e) { /* Table may not exist */ }
+try {
+    $counts['volunteers'] = (int)$pdo->query("SELECT COUNT(*) FROM volunteers WHERE email IS NOT NULL AND email != ''")->fetchColumn();
+} catch (Exception $e) { /* Table may not exist */ }
+try {
+    $counts['attendees']  = (int)$pdo->query("SELECT COUNT(*) FROM attendees WHERE email IS NOT NULL AND email != ''")->fetchColumn();
+} catch (Exception $e) { /* Table may not exist */ }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // Save settings logic
@@ -29,11 +48,49 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $appPass = trim($_POST['gmail_app_pass'] ?? '');
         $senderEmail = trim($_POST['sender_email'] ?? '');
         
-        $configContent = "<?php\n" .
-                        "define('GMAIL_USERNAME', '$senderEmail');\n" .
-                        "define('GMAIL_PASSWORD', '$appPass');\n";
-        file_put_contents(__DIR__ . '/config_mail_local.php', $configContent);
-        flash_set("Gmail App Password saved successfully! You can now send notifications directly via your Google Account.");
+        // Only save if both values are provided
+        if ($senderEmail && $appPass) {
+            $configContent = "<?php\n" .
+                            "// Auto-generated Gmail configuration\n" .
+                            "define('GMAIL_USERNAME', " . var_export($senderEmail, true) . ");\n" .
+                            "define('GMAIL_PASSWORD', " . var_export($appPass, true) . ");\n";
+            file_put_contents(__DIR__ . '/config_mail_local.php', $configContent);
+            flash_set("Gmail App Password saved successfully!");
+        } elseif (isset($_POST['reset_setup'])) {
+            // User wants to change setup — just show the form again
+            @unlink(__DIR__ . '/config_mail_local.php');
+            flash_set("Gmail setup cleared. Please enter new credentials.", "info");
+        } else {
+            flash_set("Please provide both your Gmail address and App Password.", "error");
+        }
+        redirect("notifications.php");
+    }
+    
+    // Fetch replies action
+    if (isset($_POST['fetch_replies'])) {
+        $result = fetch_gmail_replies($pdo);
+        if ($result['error']) {
+            flash_set("Reply fetch error: " . $result['error'], "error");
+        } elseif ($result['new'] > 0) {
+            flash_set("Fetched {$result['new']} new reply(s) from your Gmail inbox!");
+        } else {
+            flash_set("No new replies found. ({$result['total']} messages scanned)");
+        }
+        redirect("notifications.php");
+    }
+    
+    // Mark reply as read
+    if (isset($_POST['mark_read'])) {
+        $replyId = (int)$_POST['reply_id'];
+        $pdo->prepare("UPDATE email_replies SET is_read = 1 WHERE id = ?")->execute([$replyId]);
+        redirect("notifications.php");
+    }
+    
+    // Delete reply
+    if (isset($_POST['delete_reply'])) {
+        $replyId = (int)$_POST['reply_id'];
+        $pdo->prepare("DELETE FROM email_replies WHERE id = ?")->execute([$replyId]);
+        flash_set("Reply deleted.");
         redirect("notifications.php");
     }
 
@@ -46,9 +103,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         } else {
             $ok = send_church_email($testEmail, "SMTP Test - $appName", "This is a test message to verify your Gmail SMTP settings are correct. If you see this, your system is ready!");
             if ($ok) {
-                flash_set("Test email sent successully to $testEmail! Check your inbox.");
+                flash_set("Test email sent successfully to $testEmail! Check your inbox.");
             } else {
-                flash_set("Email failed to send. Please check your Gmail App Password.", "error");
+                $logFile = defined('MAIL_LOG_FILE') ? MAIL_LOG_FILE : __DIR__ . '/logs/mail.log';
+                $lastErrors = '';
+                if (file_exists($logFile)) {
+                    $lines = array_reverse(file($logFile));
+                    foreach (array_slice($lines, 0, 3) as $line) {
+                        if (str_contains($line, 'ERRORS:') || str_contains($line, 'FAILED')) {
+                            $lastErrors .= trim($line) . ' ';
+                        }
+                    }
+                }
+                flash_set("Email failed. " . ($lastErrors ? "Log: $lastErrors" : "Check the Activity Log below for details."), "error");
             }
         }
         redirect("notifications.php");
@@ -119,6 +186,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     redirect("notifications.php");
 }
 
+// Fetch recent replies for display
+$replies = [];
+try {
+    $replies = $pdo->query("SELECT * FROM email_replies ORDER BY received_at DESC LIMIT 20")->fetchAll();
+} catch (Exception $e) {
+    // Table might not exist yet
+}
+$unreadCount = 0;
+try {
+    $unreadCount = (int)$pdo->query("SELECT COUNT(*) FROM email_replies WHERE is_read = 0")->fetchColumn();
+} catch (Exception $e) {}
+
 require_once __DIR__ . "/header.php";
 ?>
 
@@ -163,7 +242,10 @@ require_once __DIR__ . "/header.php";
     <div class="card p-4 mb-4" style="background: rgba(0,255,127,0.05); border: 1px solid rgba(0,255,127,0.3);">
         <h3 class="h6 mb-2" style="color: #00ff7f;">✅ Connected to Gmail Successfully</h3>
         <p class="small text-muted mb-3">Your system is now actively sending notifications straight from your Gmail account. Messages will be visible in your Gmail 'Sent' folder.</p>
-        <form method="POST"><button type="submit" name="save_settings" class="btn btn-sm btn-link text-decoration-none p-0">Change Setup</button></form>
+        <form method="POST">
+            <input type="hidden" name="reset_setup" value="1">
+            <button type="submit" name="save_settings" class="btn btn-sm btn-link text-decoration-none p-0">Change Setup</button>
+        </form>
     </div>
     <?php endif; ?>
 
@@ -218,6 +300,59 @@ require_once __DIR__ . "/header.php";
                 </button>
             </form>
         </div>
+
+        <!-- =================== REPLY INBOX =================== -->
+        <div class="card" style="margin-top:24px; box-shadow: 0 10px 30px rgba(0,0,0,.2);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+                <h2 style="margin:0; font-weight:950; font-size:1.3rem;">
+                    📥 Reply Inbox
+                    <?php if ($unreadCount > 0): ?>
+                        <span style="display:inline-block; background:var(--danger); color:#fff; font-size:0.75rem; padding:3px 10px; border-radius:999px; margin-left:8px; font-weight:900;"><?= $unreadCount ?> new</span>
+                    <?php endif; ?>
+                </h2>
+                <form method="POST" style="margin:0;">
+                    <button type="submit" name="fetch_replies" value="1" class="btn btn-sm" style="background:linear-gradient(135deg, rgba(46,233,166,.2), rgba(124,92,255,.2)); border:1px solid rgba(46,233,166,.3); color:var(--text); font-weight:800; border-radius:10px; padding:8px 18px;">
+                        🔄 Fetch New Replies
+                    </button>
+                </form>
+            </div>
+
+            <?php if (empty($replies)): ?>
+                <div style="text-align:center; padding:30px; color:var(--muted);">
+                    <div style="font-size:2rem; margin-bottom:10px;">📭</div>
+                    <p class="small">No replies yet. Click <strong>"Fetch New Replies"</strong> to check your Gmail inbox.</p>
+                </div>
+            <?php else: ?>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                <?php foreach ($replies as $reply): ?>
+                    <div style="padding:16px; background:<?= $reply['is_read'] ? 'rgba(255,255,255,.02)' : 'rgba(124,92,255,.08)' ?>; border:1px solid <?= $reply['is_read'] ? 'rgba(255,255,255,.05)' : 'rgba(124,92,255,.2)' ?>; border-radius:14px; transition: all .2s;">
+                        <div style="display:flex; justify-content:space-between; align-items:start; gap:10px; flex-wrap:wrap;">
+                            <div style="flex:1; min-width:200px;">
+                                <div style="font-weight:900; font-size:0.95rem; color:<?= $reply['is_read'] ? 'var(--text)' : '#7c5cff' ?>;">
+                                    <?php if (!$reply['is_read']): ?><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#7c5cff; margin-right:6px;"></span><?php endif; ?>
+                                    <?= e($reply['from_name'] ?: $reply['from_email']) ?>
+                                </div>
+                                <div class="small" style="color:var(--muted); margin-top:2px;"><?= e($reply['from_email']) ?></div>
+                                <div style="font-weight:800; margin-top:6px; font-size:0.9rem;"><?= e($reply['subject']) ?></div>
+                                <div class="small" style="margin-top:6px; color:var(--muted); line-height:1.5; max-height:80px; overflow:hidden;">
+                                    <?= e(substr($reply['body'], 0, 300)) ?><?= strlen($reply['body']) > 300 ? '...' : '' ?>
+                                </div>
+                            </div>
+                            <div style="text-align:right; white-space:nowrap;">
+                                <div class="small" style="color:var(--muted); font-weight:600;"><?= format_date($reply['received_at'], 'd M Y H:i') ?></div>
+                                <div style="margin-top:8px; display:flex; gap:6px; justify-content:flex-end;">
+                                    <?php if (!$reply['is_read']): ?>
+                                    <form method="POST" style="margin:0;"><input type="hidden" name="reply_id" value="<?= $reply['id'] ?>"><button type="submit" name="mark_read" value="1" class="btn btn-sm" style="padding:4px 10px; font-size:0.7rem; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); color:var(--text); border-radius:8px;">✓ Read</button></form>
+                                    <?php endif; ?>
+                                    <form method="POST" style="margin:0;" onsubmit="return confirm('Delete this reply?');"><input type="hidden" name="reply_id" value="<?= $reply['id'] ?>"><button type="submit" name="delete_reply" value="1" class="btn btn-sm" style="padding:4px 10px; font-size:0.7rem; background:rgba(255,77,109,.1); border:1px solid rgba(255,77,109,.2); color:#ff4d6d; border-radius:8px;">✕</button></form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
     </div>
 
     <div class="col-4">
@@ -233,15 +368,33 @@ require_once __DIR__ . "/header.php";
             </ul>
         </div>
 
+        <!-- Test Email -->
+        <div class="card" style="margin-top:20px; background:rgba(124,92,255,.05); border-color:rgba(124,92,255,.15);">
+            <h3 style="margin:0 0 12px; font-weight:950; font-size:1.1rem;">🧪 Send Test Email</h3>
+            <form method="POST">
+                <input type="hidden" name="action" value="test_config">
+                <input class="input" name="test_email" type="email" placeholder="Enter test email..." required style="margin-bottom:10px; font-size:0.85rem;">
+                <button type="submit" class="btn btn-sm" style="width:100%; background:rgba(124,92,255,.15); border:1px solid rgba(124,92,255,.3); color:var(--text); font-weight:800; border-radius:10px;">Send Test</button>
+            </form>
+        </div>
+
         <div class="card" style="margin-top:20px;">
             <h3 style="margin:0 0 12px; font-weight:950; font-size:1.1rem;">Activity Log</h3>
             <p class="small" style="color:var(--muted);">Latest Status:</p>
-            <div id="mailLog" style="max-height:150px; overflow-y:auto; font-family:monospace; font-size:0.75rem; background:#07101f; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,.05);">
+            <div id="mailLog" style="max-height:200px; overflow-y:auto; font-family:monospace; font-size:0.75rem; background:#07101f; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,.05);">
                 <?php
-                if (file_exists(MAIL_LOG_FILE)) {
-                    $log = array_reverse(file(MAIL_LOG_FILE));
-                    $log = array_slice($log, 0, 5);
-                    foreach ($log as $line) echo "<div style='margin-bottom:5px; border-bottom:1px solid rgba(255,255,255,.03); padding-bottom:3px; color: " . (str_contains($line,'SUCCESS') ? 'var(--brand2)' : 'var(--danger)') . "'>" . e($line) . "</div>";
+                $logFile = defined('MAIL_LOG_FILE') ? MAIL_LOG_FILE : __DIR__ . '/logs/mail.log';
+                if (file_exists($logFile)) {
+                    $log = array_reverse(file($logFile));
+                    $log = array_slice($log, 0, 10);
+                    foreach ($log as $line) {
+                        $line = trim($line);
+                        if (!$line) continue;
+                        $isSuccess = str_contains($line, 'SUCCESS');
+                        $isError = str_contains($line, 'ERRORS:');
+                        $color = $isSuccess ? 'var(--brand2)' : ($isError ? '#ff8c00' : 'var(--danger)');
+                        echo "<div style='margin-bottom:5px; border-bottom:1px solid rgba(255,255,255,.03); padding-bottom:3px; color: $color; word-break:break-all;'>" . e($line) . "</div>";
+                    }
                 } else {
                     echo "<div class='small' style='color:var(--muted);'>No recent activity.</div>";
                 }

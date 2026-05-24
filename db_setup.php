@@ -78,6 +78,19 @@ try {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
     ");
+    $pdo->exec("
+    CREATE TABLE IF NOT EXISTS email_replies (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      from_email TEXT NOT NULL,
+      from_name TEXT DEFAULT '',
+      subject TEXT NOT NULL,
+      body TEXT NOT NULL,
+      received_at DATETIME NOT NULL,
+      is_read INTEGER DEFAULT 0,
+      gmail_uid TEXT UNIQUE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    ");
     echo "SQLite tables created successfully.<br>";
   } else {
     // MySQL schema
@@ -151,6 +164,20 @@ try {
       `caption` varchar(255) DEFAULT NULL,
       `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
       PRIMARY KEY (`id`)
+    )");
+    $pdo->exec("
+    CREATE TABLE IF NOT EXISTS `email_replies` (
+      `id` int(11) NOT NULL AUTO_INCREMENT,
+      `from_email` varchar(255) NOT NULL,
+      `from_name` varchar(255) DEFAULT '',
+      `subject` varchar(500) NOT NULL,
+      `body` text NOT NULL,
+      `received_at` datetime NOT NULL,
+      `is_read` tinyint(1) DEFAULT 0,
+      `gmail_uid` varchar(255) DEFAULT NULL,
+      `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `gmail_uid` (`gmail_uid`)
     )");
     echo "MySQL tables created successfully.<br>";
 

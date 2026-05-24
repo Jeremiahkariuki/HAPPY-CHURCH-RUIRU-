@@ -2,6 +2,9 @@
 declare(strict_types=1);
 
 if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
 
 function require_login(): void {
   if (empty($_SESSION["user"])) {
