@@ -118,84 +118,94 @@ function send_church_email(string $to, string $subject, string $message): bool {
             return false;
         }
         $ports = [587, 465];
+        $gmail_errors = [];
+        
         foreach ($ports as $port) {
             if ($success) break;
             
-            try {
-                $prefix = ($port === 465) ? 'ssl://' : 'tcp://';
-                $ctx = stream_context_create(['ssl' => [
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
-                    'allow_self_signed' => true,
-                ]]);
-                
-                $socket = @stream_socket_client($prefix . 'smtp.gmail.com:' . $port, $errno, $errstr, 10, STREAM_CLIENT_CONNECT, $ctx);
-                if ($socket) {
-                    stream_set_timeout($socket, 10);
-                    $smtpRead($socket); // Banner
+            // Retry up to 2 times per port for cloud deployments
+            for ($attempt = 1; $attempt <= 2 && !$success; $attempt++) {
+                try {
+                    $prefix = ($port === 465) ? 'ssl://' : 'tcp://';
+                    $ctx = stream_context_create(['ssl' => [
+                        'verify_peer' => false,
+                        'verify_peer_name' => false,
+                        'allow_self_signed' => true,
+                    ]]);
+                    
+                    $socket = @stream_socket_client($prefix . 'smtp.gmail.com:' . $port, $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $ctx);
+                    if ($socket) {
+                        stream_set_timeout($socket, 30);
+                        $smtpRead($socket); // Banner
 
-                    $smtpWrite($socket, "EHLO [127.0.0.1]");
-                    $ehloRes = $smtpRead($socket);
+                        $smtpWrite($socket, "EHLO [127.0.0.1]");
+                        $ehloRes = $smtpRead($socket);
 
-                    if ($port === 587) {
-                        // Upgrade to TLS
-                        $smtpWrite($socket, "STARTTLS");
-                        $tlsRes = $smtpRead($socket);
-                        if (strpos($tlsRes, "220") !== false) {
-                            $cryptoOk = @stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
-                            if ($cryptoOk) {
-                                $smtpWrite($socket, "EHLO " . gethostname());
-                                $smtpRead($socket);
+                        if ($port === 587) {
+                            // Upgrade to TLS
+                            $smtpWrite($socket, "STARTTLS");
+                            $tlsRes = $smtpRead($socket);
+                            if (strpos($tlsRes, "220") !== false) {
+                                $cryptoOk = @stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+                                if ($cryptoOk) {
+                                    $smtpWrite($socket, "EHLO " . gethostname());
+                                    $smtpRead($socket);
+                                } else {
+                                    $gmail_errors["$port-attempt-$attempt"] = "Gmail 587: TLS upgrade failed (attempt $attempt)";
+                                    @fclose($socket); continue;
+                                }
                             } else {
-                                $errors[] = "Gmail 587: TLS upgrade failed.";
+                                $gmail_errors["$port-attempt-$attempt"] = "Gmail 587: STARTTLS rejected (attempt $attempt)";
                                 @fclose($socket); continue;
                             }
-                        } else {
-                            $errors[] = "Gmail 587: STARTTLS rejected.";
-                            @fclose($socket); continue;
                         }
-                    }
 
-                    // Auth
-                    $smtpWrite($socket, "AUTH LOGIN");
-                    $smtpRead($socket);
-                    $smtpWrite($socket, base64_encode($g_user));
-                    $smtpRead($socket);
-                    $smtpWrite($socket, base64_encode($g_pass));
-                    $authRes = $smtpRead($socket);
-
-                    if (strpos($authRes, "235") !== false) {
-                        $smtpWrite($socket, "MAIL FROM: <$g_user>");
+                        // Auth
+                        $smtpWrite($socket, "AUTH LOGIN");
                         $smtpRead($socket);
-                        $smtpWrite($socket, "RCPT TO: <$to>");
-                        $rcptRes = $smtpRead($socket);
-                        
-                        if (strpos($rcptRes, "250") !== false) {
-                            $smtpWrite($socket, "DATA");
+                        $smtpWrite($socket, base64_encode($g_user));
+                        $smtpRead($socket);
+                        $smtpWrite($socket, base64_encode($g_pass));
+                        $authRes = $smtpRead($socket);
+
+                        if (strpos($authRes, "235") !== false) {
+                            $smtpWrite($socket, "MAIL FROM: <$g_user>");
                             $smtpRead($socket);
-                            $headers = $buildHeaders($g_user, $fromName);
-                            $smtpWrite($socket, implode("\r\n", $headers) . "\r\n\r\n" . $htmlBody . "\r\n.");
-                            $dataRes = $smtpRead($socket);
-                            if (strpos($dataRes, "250") !== false) {
-                                $success = true;
+                            $smtpWrite($socket, "RCPT TO: <$to>");
+                            $rcptRes = $smtpRead($socket);
+                            
+                            if (strpos($rcptRes, "250") !== false) {
+                                $smtpWrite($socket, "DATA");
+                                $smtpRead($socket);
+                                $headers = $buildHeaders($g_user, $fromName);
+                                $smtpWrite($socket, implode("\r\n", $headers) . "\r\n\r\n" . $htmlBody . "\r\n.");
+                                $dataRes = $smtpRead($socket);
+                                if (strpos($dataRes, "250") !== false) {
+                                    $success = true;
+                                } else {
+                                    $gmail_errors["$port-attempt-$attempt"] = "Gmail $port: DATA rejected: " . trim($dataRes);
+                                }
                             } else {
-                                $errors[] = "Gmail $port: DATA rejected: " . trim($dataRes);
+                                $gmail_errors["$port-attempt-$attempt"] = "Gmail $port: RCPT rejected: " . trim($rcptRes);
                             }
                         } else {
-                            $errors[] = "Gmail $port: RCPT rejected: " . trim($rcptRes);
+                            $gmail_errors["$port-attempt-$attempt"] = "Gmail $port: Auth failed (535). Ensure you used a 16-char 'App Password', not your normal password.";
                         }
+                        
+                        $smtpWrite($socket, "QUIT");
+                        @fclose($socket);
                     } else {
-                        $errors[] = "Gmail $port: Auth failed (535). Ensure you used a 16-char 'App Password', not your normal password.";
+                        $gmail_errors["$port-attempt-$attempt"] = "Gmail $port: Connection failed ($errstr)";
                     }
-                    
-                    $smtpWrite($socket, "QUIT");
-                    @fclose($socket);
-                } else {
-                    $errors[] = "Gmail $port: Connection failed ($errstr)";
+                } catch (Exception $e) {
+                    $gmail_errors["$port-attempt-$attempt"] = "Gmail $port error: " . $e->getMessage();
                 }
-            } catch (Exception $e) {
-                $errors[] = "Gmail $port error: " . $e->getMessage();
             }
+        }
+        
+        // Consolidate Gmail errors
+        if (!$success && !empty($gmail_errors)) {
+            $errors[] = "Gmail SMTP failed: " . implode(" | ", array_slice($gmail_errors, -2));
         }
     } else {
         $errors[] = "Gmail credentials not configured (Check Gmail Setup section above)";
@@ -212,64 +222,78 @@ function send_church_email(string $to, string $subject, string $message): bool {
         $b_enc  = defined('MAIL_ENCRYPTION') ? MAIL_ENCRYPTION : (getenv('MAIL_ENCRYPTION') ?: 'tls');
 
         if ($b_host && $b_user && $b_pass) {
-            try {
-                $prefix = ($b_enc === 'ssl') ? 'ssl://' : 'tcp://';
-                $ctx = stream_context_create(['ssl' => [
-                    'verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true,
-                ]]);
-                $socket = @stream_socket_client($prefix . $b_host . ':' . $b_port, $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $ctx);
+            $brevo_errors = [];
+            
+            // Retry up to 2 times for cloud deployments
+            for ($attempt = 1; $attempt <= 2 && !$success; $attempt++) {
+                try {
+                    $prefix = ($b_enc === 'ssl') ? 'ssl://' : 'tcp://';
+                    $ctx = stream_context_create(['ssl' => [
+                        'verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true,
+                    ]]);
+                    $socket = @stream_socket_client($prefix . $b_host . ':' . $b_port, $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $ctx);
 
-                if ($socket) {
-                    stream_set_timeout($socket, 30);
-                    $smtpRead($socket);
-
-                    $smtpWrite($socket, "EHLO " . gethostname());
-                    $ehloRes = $smtpRead($socket);
-
-                    if ($prefix === 'tcp://' && strpos($ehloRes, 'STARTTLS') !== false) {
-                        $smtpWrite($socket, "STARTTLS");
+                    if ($socket) {
+                        stream_set_timeout($socket, 30);
                         $smtpRead($socket);
-                        @stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+
                         $smtpWrite($socket, "EHLO " . gethostname());
-                        $smtpRead($socket);
-                    }
+                        $ehloRes = $smtpRead($socket);
 
-                    $smtpWrite($socket, "AUTH LOGIN");
-                    $smtpRead($socket);
-                    $smtpWrite($socket, base64_encode($b_user));
-                    $smtpRead($socket);
-                    $smtpWrite($socket, base64_encode($b_pass));
-                    $authRes = $smtpRead($socket);
-
-                    if (strpos($authRes, "235") !== false) {
-                        $senderEmail = $b_user;
-                        $smtpWrite($socket, "MAIL FROM: <$senderEmail>");
-                        $smtpRead($socket);
-                        $smtpWrite($socket, "RCPT TO: <$to>");
-                        $smtpRead($socket);
-                        $smtpWrite($socket, "DATA");
-                        $smtpRead($socket);
-
-                        $headers = $buildHeaders($senderEmail, $fromName);
-                        $smtpWrite($socket, implode("\r\n", $headers) . "\r\n\r\n" . $htmlBody . "\r\n.");
-                        $dataRes = $smtpRead($socket);
-
-                        if (strpos($dataRes, "250") !== false) {
-                            $success = true;
-                            $errors = [];
-                        } else {
-                            $errors[] = "Brevo DATA rejected: " . trim($dataRes);
+                        if ($prefix === 'tcp://' && strpos($ehloRes, 'STARTTLS') !== false) {
+                            $smtpWrite($socket, "STARTTLS");
+                            $smtpRead($socket);
+                            @stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+                            $smtpWrite($socket, "EHLO " . gethostname());
+                            $smtpRead($socket);
                         }
+
+                        $smtpWrite($socket, "AUTH LOGIN");
+                        $smtpRead($socket);
+                        $smtpWrite($socket, base64_encode($b_user));
+                        $smtpRead($socket);
+                        $smtpWrite($socket, base64_encode($b_pass));
+                        $authRes = $smtpRead($socket);
+
+                        if (strpos($authRes, "235") !== false) {
+                            $senderEmail = $b_user;
+                            $smtpWrite($socket, "MAIL FROM: <$senderEmail>");
+                            $smtpRead($socket);
+                            $smtpWrite($socket, "RCPT TO: <$to>");
+                            $smtpRead($socket);
+                            $smtpWrite($socket, "DATA");
+                            $smtpRead($socket);
+
+                            $headers = $buildHeaders($senderEmail, $fromName);
+                            $smtpWrite($socket, implode("\r\n", $headers) . "\r\n\r\n" . $htmlBody . "\r\n.");
+                            $dataRes = $smtpRead($socket);
+
+                            if (strpos($dataRes, "250") !== false) {
+                                $success = true;
+                                $errors = [];
+                            } else {
+                                $brevo_errors["attempt-$attempt"] = "Brevo DATA rejected: " . trim($dataRes);
+                            }
+                        } else {
+                            $brevo_errors["attempt-$attempt"] = "Brevo Auth Failed (attempt $attempt): " . trim($authRes);
+                        }
+                        $smtpWrite($socket, "QUIT");
+                        @fclose($socket);
                     } else {
-                        $errors[] = "Brevo Auth Failed (Check API Key): " . trim($authRes);
+                        $brevo_errors["attempt-$attempt"] = "Brevo Connection Failed ($errstr)";
                     }
-                    $smtpWrite($socket, "QUIT");
-                    @fclose($socket);
-                } else {
-                    $errors[] = "Brevo Connection Failed ($errstr)";
+                } catch (Exception $e) {
+                    $brevo_errors["attempt-$attempt"] = "Brevo Exception (attempt $attempt): " . $e->getMessage();
                 }
-            } catch (Exception $e) {
-                $errors[] = "Brevo Exception: " . $e->getMessage();
+            }
+            
+            if (!$success && !empty($brevo_errors)) {
+                $errors[] = "Brevo SMTP failed: " . implode(" | ", array_slice($brevo_errors, -1));
+            }
+        } else {
+            if (!$success && !empty($errors)) {
+                // Only add Brevo config error if Gmail also failed
+                @$errors[] = "Brevo not configured as fallback (MAIL_HOST/MAIL_USERNAME/MAIL_PASSWORD)";
             }
         }
     }
