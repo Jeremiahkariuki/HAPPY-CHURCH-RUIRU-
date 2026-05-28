@@ -6,8 +6,28 @@ ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/do
 RUN chmod +x /usr/local/bin/install-php-extensions && \
     install-php-extensions pdo pdo_mysql imap openssl
 
-# Enable Apache mod_rewrite
-RUN a2enmod rewrite
+# Enable Apache modules used by the app and faster static asset delivery
+RUN a2enmod rewrite headers expires deflate
+
+RUN printf '%s\n' \
+    '<IfModule mod_deflate.c>' \
+    '  AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript application/javascript application/json image/svg+xml' \
+    '</IfModule>' \
+    '<IfModule mod_expires.c>' \
+    '  ExpiresActive On' \
+    '  ExpiresByType text/css "access plus 30 days"' \
+    '  ExpiresByType application/javascript "access plus 30 days"' \
+    '  ExpiresByType image/png "access plus 30 days"' \
+    '  ExpiresByType image/jpeg "access plus 30 days"' \
+    '  ExpiresByType image/svg+xml "access plus 30 days"' \
+    '</IfModule>' \
+    '<IfModule mod_headers.c>' \
+    '  <FilesMatch "\.(css|js|png|jpg|jpeg|gif|svg|webp)$">' \
+    '    Header set Cache-Control "public, max-age=2592000"' \
+    '  </FilesMatch>' \
+    '</IfModule>' \
+    > /etc/apache2/conf-available/performance.conf \
+    && a2enconf performance
 
 # Change Apache port to 10000 for Render compatibility
 RUN sed -i 's/Listen 80/Listen 10000/' /etc/apache2/ports.conf \

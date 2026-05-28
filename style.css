@@ -207,6 +207,29 @@ a{color:inherit;text-decoration:none}
 .table td:first-child{border-left: var(--border); border-radius:14px 0 0 14px}
 .table td:last-child{border-right: var(--border); border-radius:0 14px 14px 0}
 
+.table-scroll{
+  overflow-x:auto;
+  -webkit-overflow-scrolling: touch;
+}
+.events-filter{
+  background:rgba(255,255,255,.03);
+  border-color:rgba(255,255,255,.05);
+  margin-bottom:20px;
+  padding:20px;
+}
+.events-filter-grid{
+  display:grid;
+  grid-template-columns:minmax(220px, 1fr) 220px auto;
+  gap:16px;
+  align-items:end;
+}
+.events-filter-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
 .input, .select, .textarea{
   width:100%;
   padding:12px 14px;
@@ -490,6 +513,91 @@ a{color:inherit;text-decoration:none}
 /* Mobile Utility */
 @media (max-width: 600px) {
   .hide-mobile { display: none !important; }
+  body{
+    background:var(--bg);
+  }
+  .topbar{
+    margin:8px;
+    padding:10px 12px;
+  }
+  .main{
+    padding:8px 10px 14px;
+  }
+  .card{
+    padding:16px 14px;
+    border-radius:16px;
+  }
+  .events-filter{
+    padding:12px;
+  }
+  .events-filter-grid{
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+  .events-filter-status{
+    width:100%;
+  }
+  .events-filter-actions{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    justify-content:stretch;
+  }
+  .events-filter-actions .btn{
+    width:100%;
+    min-height:44px;
+    padding:10px 12px !important;
+  }
+  .table-scroll{
+    overflow:visible;
+  }
+  .responsive-table{
+    border-spacing:0;
+  }
+  .responsive-table thead{
+    display:none;
+  }
+  .responsive-table,
+  .responsive-table tbody,
+  .responsive-table tr,
+  .responsive-table td{
+    display:block;
+    width:100%;
+  }
+  .responsive-table tr{
+    margin-bottom:12px;
+    padding:12px;
+    border:var(--border);
+    border-radius:16px;
+    background:rgba(255,255,255,.04);
+  }
+  .responsive-table td{
+    display:grid;
+    grid-template-columns:96px minmax(0, 1fr);
+    gap:12px;
+    align-items:center;
+    padding:8px 0;
+    border:0;
+    background:transparent;
+  }
+  .responsive-table td:first-child,
+  .responsive-table td:last-child{
+    border:0;
+    border-radius:0;
+  }
+  .responsive-table td::before{
+    content:attr(data-label);
+    color:var(--muted);
+    font-size:.78rem;
+    font-weight:800;
+  }
+  .responsive-table .actions{
+    justify-content:stretch;
+  }
+  .responsive-table .actions .btn,
+  .responsive-table .actions form,
+  .responsive-table .actions .pill{
+    width:100%;
+  }
 }
 
 /* Button Loading State */

@@ -193,7 +193,6 @@ if ($action === "edit" && $id > 0) {
   $edit = $stmt->fetch();
 }
 
-$rows = $pdo->query("SELECT * FROM events ORDER BY event_date DESC, id DESC")->fetchAll();
 // --- Filters + Pagination ---
 $q = trim((string)($_GET["q"] ?? ""));
 $statusF = trim((string)($_GET["status"] ?? ""));
@@ -374,13 +373,13 @@ require_once __DIR__ . "/header.php";
       </div>
 
       <div style="margin-top:20px;">
-        <form method="get" class="card" style="background:rgba(255,255,255,.03); border-color:rgba(255,255,255,.05); margin-bottom:20px; padding:20px;">
-          <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-end;">
-            <div style="flex:1; min-width:200px;">
+        <form method="get" class="card events-filter">
+          <div class="events-filter-grid">
+            <div class="events-filter-search">
               <label class="small" style="display:block; margin-bottom:8px;">Search</label>
               <input class="input" name="q" value="<?= e($q) ?>" placeholder="Title, location...">
             </div>
-            <div style="width:180px;">
+            <div class="events-filter-status">
               <label class="small" style="display:block; margin-bottom:8px;">Status</label>
               <select class="select" name="status">
                 <option value="">All Statuses</option>
@@ -389,7 +388,7 @@ require_once __DIR__ . "/header.php";
                 <?php endforeach; ?>
               </select>
             </div>
-            <div style="display:flex; gap:10px; flex-wrap:nowrap;">
+            <div class="events-filter-actions">
               <button class="btn" type="submit" style="padding: 10px 20px;">Search</button>
               <a class="btn btn-ghost" href="events.php" style="padding: 10px 15px;">Reset</a>
               <a class="btn btn-ghost" href="events_export.php?<?= http_build_query($_GET) ?>" target="_blank" rel="noopener" style="padding: 10px 15px;">CSV</a>
@@ -398,8 +397,8 @@ require_once __DIR__ . "/header.php";
           </div>
         </form>
 
-        <div style="overflow-x:auto;">
-          <table class="table">
+        <div class="table-scroll">
+          <table class="table responsive-table">
             <thead>
               <tr>
                 <th>Date</th><th>Title</th><th>Location</th><th class="hide-mobile">Category</th><th>Status</th>
@@ -413,26 +412,26 @@ require_once __DIR__ . "/header.php";
             <tbody>
               <?php foreach ($rows as $r): ?>
                 <tr>
-                  <td style="white-space:nowrap;"><?= e(format_date($r["event_date"])) ?></td>
-                  <td>
+                  <td data-label="Date" style="white-space:nowrap;"><?= e(format_date($r["event_date"])) ?></td>
+                  <td data-label="Title">
                     <div style="font-weight:850;"><?= e($r["title"]) ?></div>
                     <div class="small" style="max-height:32px; overflow:hidden;"><?= e($r["description"] ?? "") ?></div>
                   </td>
-                  <td><?= e($r["location"]) ?></td>
-                   <td class="hide-mobile"><span class="pill" style="font-size:0.7rem; margin:0;"><?= e($r["category"]) ?></span></td>
-                  <td>
+                  <td data-label="Location"><?= e($r["location"]) ?></td>
+                   <td class="hide-mobile" data-label="Category"><span class="pill" style="font-size:0.7rem; margin:0;"><?= e($r["category"]) ?></span></td>
+                  <td data-label="Status">
                      <?php
                        $color = ["Scheduled"=>"var(--brand)", "Ongoing"=>"var(--brand2)", "Completed"=>"var(--muted)", "Cancelled"=>"var(--danger)"][$r["status"]] ?? "var(--text)";
                      ?>
                      <span style="color:<?= $color ?>; font-weight:800; font-size:0.85rem;">● <?= e($r["status"]) ?></span>
                   </td>
                   <?php if (in_array($_SESSION["user"]["role"] ?? "", ["admin", "Receptionist"])): ?>
-                    <td class="actions">
+                    <td class="actions" data-label="Actions">
                       <a class="btn btn-ghost" href="events.php?action=edit&id=<?= (int)$r["id"] ?>#edit-form">Edit</a>
                       <a class="btn btn-danger" href="events.php?action=delete&id=<?= (int)$r["id"] ?>">Delete</a>
                     </td>
                   <?php else: ?>
-                    <td class="actions">
+                    <td class="actions" data-label="Register">
                       <?php if (in_array($r["id"], $appliedEvents)): ?>
                          <span class="pill" style="background:var(--brand); color:#fff; font-weight:800; border:none; white-space:nowrap;">✓ Registered Successfully</span>
                       <?php elseif ($r["status"] === "Scheduled" || $r["status"] === "Ongoing"): ?>
