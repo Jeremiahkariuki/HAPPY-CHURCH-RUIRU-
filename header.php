@@ -233,10 +233,6 @@ function isActiveTab(string $t, string $currentTab, string $page): bool {
       </div>
     </div>
   </div>
-  <div class="tag" style="display: flex; align-items: center; gap: 8px;">
-    <span style="opacity: 0.6; font-size: 0.7rem; font-weight: 700;"><?= e($sysVersion) ?></span>
-    <span class="tag-pill" style="background: var(--brand2); color: #07101f; padding: 2px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: 900;">LIVE</span>
-  </div>
 </header>
 
 <!-- ✅ IMPORTANT: Keep MAIN OPEN (do NOT close here) -->
