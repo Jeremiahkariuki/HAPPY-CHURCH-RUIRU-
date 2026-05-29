@@ -230,6 +230,111 @@ a{color:inherit;text-decoration:none}
   justify-content:flex-end;
 }
 
+.notifications-hero{
+  margin-bottom:24px;
+  background:linear-gradient(135deg, rgba(124,92,255,.12), rgba(46,233,166,.06));
+  border:1px solid rgba(255,255,255,.1);
+}
+.mail-setup-card{
+  margin-bottom:24px;
+  background:linear-gradient(135deg, rgba(124,92,255,.10), rgba(0,255,200,.05));
+  border:2px solid var(--brand2);
+  border-radius:12px;
+  box-shadow:0 0 20px rgba(124,92,255,.3);
+}
+.mail-setup-form{
+  display:grid;
+  grid-template-columns:minmax(180px, 1fr) minmax(220px, 1fr) auto;
+  gap:12px;
+  align-items:center;
+}
+.mail-setup-form .btn{
+  width:100%;
+  min-height:48px;
+}
+.mail-setup-help{
+  grid-column:1 / -1;
+  display:flex;
+  gap:15px;
+  flex-wrap:wrap;
+  color:#888;
+  font-size:.8rem;
+}
+.mail-status-card{
+  margin-bottom:24px;
+  background:rgba(0,255,127,.05);
+  border:1px solid rgba(0,255,127,.3);
+}
+.notification-card{
+  box-shadow:0 10px 30px rgba(0,0,0,.2);
+}
+.recipient-section{
+  margin-bottom:25px;
+  padding:20px;
+  background:rgba(255,255,255,.02);
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.05);
+}
+.recipient-options{
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:10px;
+}
+.recipient-option{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px;
+  cursor:pointer;
+  border-radius:12px;
+  border:var(--border);
+  background:rgba(255,255,255,.03);
+}
+.reply-inbox{
+  margin-top:24px;
+}
+.reply-inbox-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:20px;
+}
+.reply-list{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.reply-card{
+  padding:16px;
+  border:1px solid rgba(255,255,255,.05);
+  border-radius:14px;
+}
+.reply-card-inner{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.reply-copy{
+  flex:1;
+  min-width:200px;
+  overflow-wrap:anywhere;
+}
+.reply-meta{
+  text-align:right;
+  white-space:nowrap;
+}
+.reply-actions{
+  margin-top:8px;
+  display:flex;
+  gap:6px;
+  justify-content:flex-end;
+}
+
 .input, .select, .textarea{
   width:100%;
   padding:12px 14px;
@@ -328,6 +433,10 @@ a{color:inherit;text-decoration:none}
   .app-shell.sidebar-collapsed .sidebar{transform: translateX(-105%)}
   .grid{grid-template-columns: repeat(6, 1fr)}
   .col-4,.col-6,.col-8,.col-3{grid-column: span 6}
+  .notifications-grid{grid-template-columns:1fr;}
+  .notifications-grid .col-8,
+  .notifications-grid .col-4{grid-column: span 6;}
+  .reply-meta{min-width:0; text-align:left; width:100%;}
   /* ===== Topbar + Slide Drawer Menu ===== */
 .app-shell{
   display:block;
@@ -597,6 +706,72 @@ a{color:inherit;text-decoration:none}
   .responsive-table .actions form,
   .responsive-table .actions .pill{
     width:100%;
+  }
+  .notifications-hero h1{
+    font-size:1.35rem !important;
+    line-height:1.2;
+  }
+  .mail-setup-form{
+    grid-template-columns:1fr;
+  }
+  .grid{
+    grid-template-columns:1fr;
+  }
+  .reply-card-inner{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:14px;
+  }
+  .reply-meta{
+    width:100%;
+    text-align:left;
+    white-space:normal;
+  }
+  .mail-setup-help{
+    display:grid;
+    gap:8px;
+  }
+  .mail-setup-help span{
+    margin-left:0 !important;
+  }
+  .recipient-section{
+    padding:12px;
+    margin-bottom:18px;
+  }
+  .recipient-options{
+    grid-template-columns:1fr;
+  }
+  .recipient-option{
+    min-height:56px;
+  }
+  .reply-inbox-head{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+  .reply-inbox-head .btn,
+  .reply-inbox-head form{
+    width:100%;
+  }
+  .reply-card{
+    padding:12px;
+  }
+  .reply-card-inner{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+  .reply-copy{
+    min-width:0;
+  }
+  .reply-meta{
+    text-align:left;
+    white-space:normal;
+  }
+  .reply-actions{
+    justify-content:flex-start;
+    flex-wrap:wrap;
+  }
+  #mailLog{
+    max-height:160px !important;
   }
 }
 
