@@ -225,48 +225,34 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $emails = array_unique(array_filter($emails));
         $sentCount = 0;
         $failCount = 0;
+        $aborted = false;
 
-        if ($isAjax) {
-            // Return quickly to keep the UI responsive while the server continues sending emails.
-            $response = json_encode([
-                'status' => 'success',
-                'message' => 'Your message is being sent. Check the Activity Log for updates.',
-                'redirect' => null,
-            ]);
-            header('Content-Type: application/json; charset=utf-8');
-            header('Connection: close');
-            header('Content-Length: ' . (string)strlen($response));
-            echo $response;
-            if (function_exists('fastcgi_finish_request')) {
-                session_write_close();
-                fastcgi_finish_request();
-            } else {
-                session_write_close();
-                ignore_user_abort(true);
-                while (ob_get_level() > 0) {
-                    ob_end_flush();
-                }
-                flush();
-            }
-        }
-        
         foreach ($emails as $email) {
             if (send_church_email($email, $subject, $message)) {
                 $sentCount++;
             } else {
                 $failCount++;
+                // If 3 consecutive emails fail and none succeeded, SMTP is likely down. Abort to prevent timeouts.
+                if ($failCount >= 3 && $sentCount === 0) {
+                    $aborted = true;
+                    $logFile = defined('MAIL_LOG_FILE') ? MAIL_LOG_FILE : __DIR__ . '/logs/mail.log';
+                    @file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] FAILED: SMTP connection down or rejected. Aborting remaining recipients.\n", FILE_APPEND);
+                    break;
+                }
             }
         }
 
-        if (!$isAjax) {
-            if ($sentCount > 0) {
-                $msg = "Success: Message sent to $sentCount recipient(s).";
-                if ($failCount > 0) $msg .= " ($failCount failed)";
-                flash_set($msg);
-            } else {
-                flash_set("Failed to send any emails. Check system logs.", "error");
-            }
-            send_response(true, "Message processing complete.", "success");
+        if ($sentCount > 0) {
+            $msg = "Message sent to $sentCount recipient(s).";
+            if ($failCount > 0) $msg .= " ($failCount failed)";
+            if ($aborted) $msg .= " (Remaining sends aborted due to connection issues)";
+            flash_set($msg, 'success');
+            send_response(true, $msg, 'success');
+        } else {
+            $errMsg = "Failed to send emails. Check the Activity Log for SMTP errors.";
+            if ($aborted) $errMsg = "SMTP connection failed or authentication was rejected. Check your App Password.";
+            flash_set($errMsg, 'error');
+            send_response(false, $errMsg, 'error');
         }
     }
 }
