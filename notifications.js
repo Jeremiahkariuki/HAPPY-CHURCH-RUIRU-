@@ -40,17 +40,41 @@
                     method: 'POST',
                     body: formData,
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin',
                 });
-                const data = await response.json();
-                if (data.status === 'success') {
+
+                // Read raw text first to handle non-JSON responses (e.g., login redirect HTML)
+                const raw = await response.text();
+                let data = null;
+                try {
+                    data = JSON.parse(raw);
+                } catch (parseErr) {
+                    // If server returned the login page (session expired), redirect user to login
+                    const isLoginPage = response.redirected && response.url && response.url.includes('login.php')
+                        || /<title>\s*Login\s*•\s*HAPPY CHURCH/i.test(raw)
+                        || raw.toLowerCase().includes('login.php');
+                    if (isLoginPage) {
+                        showToast('Session expired. Redirecting to login...', 'error');
+                        setTimeout(() => window.location.href = 'login.php', 800);
+                        return;
+                    }
+
+                    // Otherwise show a helpful snippet of the raw response for debugging
+                    const snippet = raw.replace(/\s+/g, ' ').slice(0, 300);
+                    showToast('Server response unexpected: ' + snippet, 'error');
+                    return;
+                }
+
+                if (data && data.status === 'success') {
                     showToast(data.message || 'Done', 'success');
                     if (data.redirect) {
                         window.location.href = data.redirect;
                     }
                 } else {
-                    showToast(data.message || 'Something went wrong.', 'error');
+                    showToast((data && data.message) ? data.message : 'Something went wrong.', 'error');
                 }
             } catch (err) {
+                console.error('AJAX error', err);
                 showToast('Unable to process request. Please try again.', 'error');
             } finally {
                 setButtonLoading(submitButton, false);
