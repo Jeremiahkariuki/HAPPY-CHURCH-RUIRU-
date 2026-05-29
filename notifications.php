@@ -52,18 +52,15 @@ function recent_log_lines(string $path, int $limit = 10): array {
     if (!is_file($path) || !is_readable($path)) {
         return [];
     }
-
-    $lines = [];
-    $file = new SplFileObject($path, 'r');
-    $file->seek(PHP_INT_MAX);
-    for ($line = $file->key(); $line >= 0 && count($lines) < $limit; $line--) {
-        $file->seek($line);
-        $entry = trim((string)$file->current());
-        if ($entry !== '') {
-            $lines[] = $entry;
+    try {
+        $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if ($lines === false) {
+            return [];
         }
+        return array_reverse(array_slice($lines, -$limit));
+    } catch (Throwable $t) {
+        return [];
     }
-    return $lines;
 }
 
 // Ensure database connection is active

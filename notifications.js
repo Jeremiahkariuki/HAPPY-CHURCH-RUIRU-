@@ -29,11 +29,14 @@
             if (form.dataset.submitting === '1') return;
             form.dataset.submitting = '1';
 
-            const submitButton = form.querySelector('button[type="submit"]');
+            const submitButton = event.submitter || form.querySelector('button[type="submit"]');
             setButtonLoading(submitButton, true);
 
             const formData = new FormData(form);
             formData.set('ajax', '1');
+            if (event.submitter && event.submitter.name) {
+                formData.set(event.submitter.name, event.submitter.value || '1');
+            }
 
             try {
                 const response = await fetch(form.action || window.location.href, {
@@ -43,15 +46,28 @@
                     credentials: 'same-origin',
                 });
 
-                // Read raw text first to handle non-JSON responses (e.g., login redirect HTML)
+                // Read raw text first to handle non-JSON responses (e.g., login redirect HTML or error output)
                 const raw = await response.text();
+
+                if (!response.ok) {
+                    const isLoginPage = (response.redirected && response.url && response.url.includes('login.php'))
+                        || /<title>\s*Login\s*•\s*HAPPY CHURCH/i.test(raw)
+                        || raw.toLowerCase().includes('login.php');
+                    if (isLoginPage) {
+                        showToast('Session expired. Redirecting to login...', 'error');
+                        setTimeout(() => window.location.href = 'login.php', 800);
+                        return;
+                    }
+                    const snippet = raw.replace(/\s+/g, ' ').slice(0, 300);
+                    showToast(`HTTP ${response.status}: ${snippet || response.statusText}`, 'error');
+                    return;
+                }
+
                 let data = null;
                 try {
                     data = JSON.parse(raw);
                 } catch (parseErr) {
-                    // If server returned the login page (session expired), redirect user to login
-                    const isLoginPage = response.redirected && response.url && response.url.includes('login.php')
-                        || /<title>\s*Login\s*•\s*HAPPY CHURCH/i.test(raw)
+                    const isLoginPage = /<title>\s*Login\s*•\s*HAPPY CHURCH/i.test(raw)
                         || raw.toLowerCase().includes('login.php');
                     if (isLoginPage) {
                         showToast('Session expired. Redirecting to login...', 'error');
