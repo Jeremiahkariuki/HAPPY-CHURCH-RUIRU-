@@ -515,7 +515,7 @@ require_once __DIR__ . "/header.php";
             const submitButton = form.querySelector('button[type="submit"]');
             setButtonLoading(submitButton, true);
 
-            const formData = new FormData(form);
+            const formData = new FormData(form); // @phpstan-ignore-line
             formData.set('ajax', '1');
 
             try {
