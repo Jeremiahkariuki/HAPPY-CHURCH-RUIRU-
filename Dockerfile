@@ -1,7 +1,7 @@
 FROM php:8.2-apache
 
-# Install the PHP extension installer for robust extension management
-ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
+# Copy the pre-downloaded extension installer to leverage Docker build caching
+COPY install-php-extensions /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/install-php-extensions && \
     install-php-extensions pdo pdo_mysql imap openssl
