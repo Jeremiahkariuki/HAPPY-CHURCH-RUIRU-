@@ -80,7 +80,9 @@ function send_church_email(string $to, string $subject, string $message): bool {
     $errors = [];
 
     // --- Helper closures for raw SMTP communication ---
-    $smtpRead = function($s) {
+    $dialogue = [];
+    $inAuth = false;
+    $smtpRead = function($s) use (&$dialogue) {
         $data = "";
         $timeout = 0;
         while ($str = @fgets($s, 515)) {
@@ -89,9 +91,20 @@ function send_church_email(string $to, string $subject, string $message): bool {
             $timeout++;
             if ($timeout > 100) break; // Safety valve
         }
+        $dialogue[] = "S: " . trim($data);
         return $data;
     };
-    $smtpWrite = function($s, $cmd) { @fputs($s, $cmd . "\r\n"); };
+    $smtpWrite = function($s, $cmd) use (&$dialogue, &$inAuth) {
+        @fputs($s, $cmd . "\r\n");
+        if ($cmd === "AUTH LOGIN") {
+            $dialogue[] = "C: AUTH LOGIN";
+            $inAuth = true;
+        } elseif ($inAuth) {
+            $dialogue[] = "C: [AUTH CREDENTIAL]";
+        } else {
+            $dialogue[] = "C: " . $cmd;
+        }
+    };
 
     // --- Build MIME headers (shared by all providers) ---
     $buildHeaders = function(string $senderEmail, string $senderName) use ($to, $subject) {
@@ -151,12 +164,13 @@ function send_church_email(string $to, string $subject, string $message): bool {
                             $smtpWrite($socket, "STARTTLS");
                             $tlsRes = $smtpRead($socket);
                             if (strpos($tlsRes, "220") !== false) {
-                                $cryptoOk = @stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+                                // Enable crypto using ANY client protocol to auto-negotiate TLS 1.2/1.3
+                                $cryptoOk = @stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_ANY_CLIENT);
                                 if ($cryptoOk) {
                                     $smtpWrite($socket, "EHLO " . gethostname());
                                     $smtpRead($socket);
                                 } else {
-                                    $gmail_errors["$port-attempt-$attempt"] = "Gmail 587: TLS upgrade failed (attempt $attempt)";
+                                    $gmail_errors["$port-attempt-$attempt"] = "Gmail 587: TLS upgrade handshake failed (attempt $attempt)";
                                     @fclose($socket); continue;
                                 }
                             } else {
@@ -172,6 +186,7 @@ function send_church_email(string $to, string $subject, string $message): bool {
                         $smtpRead($socket);
                         $smtpWrite($socket, base64_encode($g_pass));
                         $authRes = $smtpRead($socket);
+                        $inAuth = false;
 
                         if (strpos($authRes, "235") !== false) {
                             $smtpWrite($socket, "MAIL FROM: <$g_user>");
@@ -187,6 +202,7 @@ function send_church_email(string $to, string $subject, string $message): bool {
                                 $dataRes = $smtpRead($socket);
                                 if (strpos($dataRes, "250") !== false) {
                                     $success = true;
+                                    $errors = []; // Clear previous errors on success
                                 } else {
                                     $gmail_errors["$port-attempt-$attempt"] = "Gmail $port: DATA rejected: " . trim($dataRes);
                                 }
@@ -210,7 +226,7 @@ function send_church_email(string $to, string $subject, string $message): bool {
         
         // Consolidate Gmail errors
         if (!$success && !empty($gmail_errors)) {
-            $errors[] = "Gmail SMTP failed: " . implode(" | ", array_slice($gmail_errors, -2));
+            $errors[] = "Gmail SMTP failed: " . implode(" | ", array_slice($gmail_errors, -2)) . " [Dialogue: " . implode(" -> ", $dialogue) . "]";
         }
     } else {
         $errors[] = "Gmail credentials not configured (Check Gmail Setup section above)";
@@ -248,7 +264,7 @@ function send_church_email(string $to, string $subject, string $message): bool {
                         if ($prefix === 'tcp://' && strpos($ehloRes, 'STARTTLS') !== false) {
                             $smtpWrite($socket, "STARTTLS");
                             $smtpRead($socket);
-                            @stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+                            @stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_ANY_CLIENT);
                             $smtpWrite($socket, "EHLO " . gethostname());
                             $smtpRead($socket);
                         }
@@ -259,6 +275,7 @@ function send_church_email(string $to, string $subject, string $message): bool {
                         $smtpRead($socket);
                         $smtpWrite($socket, base64_encode($b_pass));
                         $authRes = $smtpRead($socket);
+                        $inAuth = false;
 
                         if (strpos($authRes, "235") !== false) {
                             $senderEmail = $b_user;
@@ -293,7 +310,7 @@ function send_church_email(string $to, string $subject, string $message): bool {
             }
             
             if (!$success && !empty($brevo_errors)) {
-                $errors[] = "Brevo SMTP failed: " . implode(" | ", array_slice($brevo_errors, -1));
+                $errors[] = "Brevo SMTP failed: " . implode(" | ", array_slice($brevo_errors, -1)) . " [Dialogue: " . implode(" -> ", $dialogue) . "]";
             }
         } else {
             if (!$success && !empty($errors)) {

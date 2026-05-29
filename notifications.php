@@ -95,26 +95,32 @@ try {
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // Save settings logic
     if (isset($_POST['save_settings'])) {
-        $appPass = trim($_POST['gmail_app_pass'] ?? '');
-        $senderEmail = trim($_POST['sender_email'] ?? '');
-        
-        // Only save if both values are provided
-        if ($senderEmail && $appPass) {
-            $configContent = "<?php\n" .
-                            "// Auto-generated Gmail configuration\n" .
-                            "define('GMAIL_USERNAME', " . var_export($senderEmail, true) . ");\n" .
-                            "define('GMAIL_PASSWORD', " . var_export($appPass, true) . ");\n";
-            file_put_contents(__DIR__ . '/config_mail_local.php', $configContent);
-            flash_set("Gmail App Password saved successfully!");
-            send_response(true, "Gmail App Password saved successfully!", 'success', 'notifications.php');
-        } elseif (isset($_POST['reset_setup'])) {
-            // User wants to change setup — just show the form again
+        if (isset($_POST['reset_setup']) && $_POST['reset_setup'] === '1') {
             @unlink(__DIR__ . '/config_mail_local.php');
-            flash_set("Gmail setup cleared. Please enter new credentials.", "info");
-            send_response(true, "Gmail setup cleared. Please enter new credentials.", "info", 'notifications.php');
+            flash_set("Gmail configuration cleared. Using environment variables.", "info");
+            send_response(true, "Gmail configuration cleared. Using environment variables.", "info", 'notifications.php');
         } else {
-            flash_set("Please provide both your Gmail address and App Password.", "error");
-            send_response(false, "Please provide both your Gmail address and App Password.", "error");
+            $appPass = trim($_POST['gmail_app_pass'] ?? '');
+            $senderEmail = trim($_POST['sender_email'] ?? '');
+            
+            if ($appPass === '••••••••••••••••' || $appPass === '****************') {
+                $appPass = defined('GMAIL_PASSWORD') ? GMAIL_PASSWORD : (getenv('GMAIL_PASSWORD') ?: '');
+            }
+            
+            $appPass = str_replace(' ', '', $appPass); // Strip spaces
+
+            if ($senderEmail && $appPass) {
+                $configContent = "<?php\n" .
+                                "// Auto-generated Gmail configuration\n" .
+                                "define('GMAIL_USERNAME', " . var_export($senderEmail, true) . ");\n" .
+                                "define('GMAIL_PASSWORD', " . var_export($appPass, true) . ");\n";
+                file_put_contents(__DIR__ . '/config_mail_local.php', $configContent);
+                flash_set("Gmail SMTP configuration saved successfully!");
+                send_response(true, "Gmail SMTP configuration saved successfully!", 'success', 'notifications.php');
+            } else {
+                flash_set("Please provide both your Gmail address and App Password.", "error");
+                send_response(false, "Please provide both your Gmail address and App Password.", "error");
+            }
         }
     }
     
@@ -287,38 +293,6 @@ require_once __DIR__ . "/header.php";
     </div>
 <?php endif; ?>
 
-    <?php if (!$local_pass): ?>
-    <div class="card mail-setup-card">
-        <h3 class="h5 mb-3" style="color: #fff; font-weight: 950;"><span style="color: #ff5c5c;">⚠️ GMAIL APP PASSWORD SETUP (REQUIRED)</span></h3>
-        <p style="color: #ddd;">To ensure notifications are sent directly from your Gmail account (and visible in your Sent folder), you <strong>MUST</strong> provide a Google App Password.<br>Standard passwords will not work. See instructions below to generate a 16-character App Password.</p>
-        
-        <form method="POST" class="mail-setup-form" data-ajax="true">
-            <div>
-                <input type="email" name="sender_email" class="input" placeholder="Your Gmail Address" value="<?= e($local_user) ?>" required>
-            </div>
-            <div>
-                <input type="password" name="gmail_app_pass" class="input" placeholder="Paste 16-char Gmail App Password here" required>
-            </div>
-            <div>
-                <button type="submit" name="save_settings" class="btn btn-sm btn-outline-primary w-100">🚀 CONNECT</button>
-            </div>
-            <div class="mail-setup-help">
-                <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color: var(--brand2); font-weight: 700; text-decoration: none;">1. Click Here to Get Google App Password →</a>
-                <span style="color: #888; font-size: 0.8rem; margin-left: 15px;">2. Follow Google's prompts, generate it for "Mail" / "Windows Computer", and paste it above!</span>
-            </div>
-        </form>
-    </div>
-    <style>@keyframes pulse { 0% { box-shadow: 0 0 10px rgba(124,92,255,0.1); } 50% { box-shadow: 0 0 25px rgba(124,92,255,0.4); } 100% { box-shadow: 0 0 10px rgba(124,92,255,0.1); } }</style>
-    <?php else: ?>
-    <div class="card mail-status-card">
-        <h3 class="h6 mb-2" style="color: #00ff7f;">✅ Connected to Gmail Successfully</h3>
-        <p class="small text-muted mb-3">Your system is now actively sending notifications straight from your Gmail account. Messages will be visible in your Gmail 'Sent' folder.</p>
-        <form method="POST" data-ajax="true">
-            <input type="hidden" name="reset_setup" value="1">
-            <button type="submit" name="save_settings" class="btn btn-sm btn-link text-decoration-none p-0">Change Setup</button>
-        </form>
-    </div>
-    <?php endif; ?>
 
 <div class="grid notifications-grid">
     <div class="col-8">
@@ -427,6 +401,54 @@ require_once __DIR__ . "/header.php";
     </div>
 
     <div class="col-4">
+        <!-- Gmail SMTP Settings Card -->
+        <div class="card mail-setup-card" style="margin-bottom:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 class="h5" style="color: #fff; font-weight: 950; margin:0; font-size:1.1rem;">
+                    📧 Gmail Settings
+                </h3>
+                <?php if ($local_pass): ?>
+                    <span class="badge" style="background:rgba(46,233,166,.15); color:var(--brand2); border:1px solid rgba(46,233,166,.3); font-weight:800; font-size:0.7rem; padding:3px 8px; border-radius:30px;">
+                        🟢 Connected
+                    </span>
+                <?php else: ?>
+                    <span class="badge" style="background:rgba(255,77,109,.15); color:#ff4d6d; border:1px solid rgba(255,77,109,.3); font-weight:800; font-size:0.7rem; padding:3px 8px; border-radius:30px;">
+                        ⚠️ Off
+                    </span>
+                <?php endif; ?>
+            </div>
+
+            <form method="POST" class="mail-setup-form" data-ajax="true" style="display:flex; flex-direction:column; gap:10px;">
+                <div>
+                    <label class="small text-muted" style="display:block; margin-bottom:4px; font-weight:700; font-size:0.75rem;">Gmail Address</label>
+                    <input type="email" name="sender_email" class="input" placeholder="Your Gmail Address" value="<?= e($local_user) ?>" required style="font-weight:700; font-size:0.85rem; padding:10px;">
+                </div>
+                <div>
+                    <label class="small text-muted" style="display:block; margin-bottom:4px; font-weight:700; font-size:0.75rem;">Gmail App Password</label>
+                    <input type="password" name="gmail_app_pass" class="input" placeholder="16-char App Password" value="<?= $local_pass ? '••••••••••••••••' : '' ?>" required style="font-weight:700; font-size:0.85rem; padding:10px;">
+                </div>
+                <div style="display:flex; gap:8px; margin-top:3px;">
+                    <button type="submit" name="save_settings" class="btn btn-sm" style="flex:2; background:linear-gradient(135deg, var(--brand), var(--brand2)); color:#07101f; font-weight:950; border:none; border-radius:10px; padding:10px; font-size:0.8rem;">
+                        <?= $local_pass ? '🔄 Update' : '🚀 Connect' ?>
+                    </button>
+                    <?php if ($local_pass): ?>
+                        <button type="submit" name="save_settings" value="1" onclick="this.form.reset_setup.value='1';" class="btn btn-sm" style="flex:1.2; background:rgba(255,77,109,.1); border:1px solid rgba(255,77,109,.3); color:#ff4d6d; font-weight:900; border-radius:10px; padding:10px; font-size:0.8rem;">
+                            Disconnect
+                        </button>
+                    <?php endif; ?>
+                </div>
+                <input type="hidden" name="reset_setup" value="0">
+                <div class="mail-setup-help" style="margin-top:6px; border-top:1px solid rgba(255,255,255,.05); padding-top:8px; display:flex; flex-direction:column; gap:4px;">
+                    <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color: var(--brand2); font-weight: 700; text-decoration: none; font-size:0.75rem;">
+                        1. Click here to get App Password →
+                    </a>
+                    <div style="color: #888; font-size: 0.7rem; line-height:1.3;">
+                        2. Follow prompts and paste code above!
+                    </div>
+                </div>
+            </form>
+        </div>
+
         <div class="card" style="background:rgba(255,193,7,.05); border-color:rgba(255,193,7,.15);">
             <h3 style="margin:0 0 10px; color:#ffcc00; font-weight:950; font-size:1.1rem;">Gmail Setup Check</h3>
             <p class="small" style="line-height:1.6; color:var(--muted);">
