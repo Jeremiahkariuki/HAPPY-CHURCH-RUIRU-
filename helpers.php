@@ -111,6 +111,7 @@ function send_church_email(string $to, string $subject, string $message): bool {
     // =====================================================
     $g_user = defined('GMAIL_USERNAME') ? GMAIL_USERNAME : (getenv('GMAIL_USERNAME') ?: '');
     $g_pass = defined('GMAIL_PASSWORD') ? GMAIL_PASSWORD : (getenv('GMAIL_PASSWORD') ?: '');
+    $g_pass = str_replace(' ', '', $g_pass);
 
     if ($g_user && $g_pass) {
         if (!extension_loaded('openssl')) {
@@ -317,6 +318,7 @@ function fetch_gmail_replies(PDO $pdo): array {
     
     $g_user = defined('GMAIL_USERNAME') ? GMAIL_USERNAME : (getenv('GMAIL_USERNAME') ?: '');
     $g_pass = defined('GMAIL_PASSWORD') ? GMAIL_PASSWORD : (getenv('GMAIL_PASSWORD') ?: '');
+    $g_pass = str_replace(' ', '', $g_pass);
     
     if (!$g_user || !$g_pass) {
         $results['error'] = 'Gmail credentials not configured.';
