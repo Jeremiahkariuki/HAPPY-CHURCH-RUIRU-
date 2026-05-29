@@ -63,6 +63,44 @@ if ($action === "edit" && $id > 0) {
   $edit = $stmt->fetch();
 }
 
+/* -----------------------
+   CREATE / UPDATE
+------------------------ */
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    csrf_verify();
+    $mode = trim((string)($_POST["mode"] ?? "create"));
+    $full_name = trim((string)($_POST["full_name"] ?? ""));
+    $ministry = trim((string)($_POST["ministry"] ?? ""));
+    $phone = trim((string)($_POST["phone"] ?? ""));
+    $email = trim((string)($_POST["email"] ?? ""));
+    $availability = trim((string)($_POST["availability"] ?? "Both"));
+    $event_id = trim((string)($_POST["event_id"] ?? ""));
+    $notes = trim((string)($_POST["notes"] ?? ""));
+
+    if ($full_name === "" || $ministry === "") {
+        flash_set("Full Name and Ministry are required fields.", "error");
+        redirect("volunteers.php");
+    }
+
+    $eventIdValue = $event_id === "" ? null : (int)$event_id;
+
+    if ($mode === "update" && $id > 0) {
+        $pdo->prepare(
+            "UPDATE volunteers SET full_name=?, ministry=?, phone=?, email=?, availability=?, event_id=?, notes=? WHERE id=?"
+        )->execute([$full_name, $ministry, $phone, $email, $availability, $eventIdValue, $notes, $id]);
+        flash_set("Volunteer updated successfully.");
+    } else {
+        $pdo->prepare(
+            "INSERT INTO volunteers (full_name, ministry, phone, email, availability, event_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?)"
+        )->execute([$full_name, $ministry, $phone, $email, $availability, $eventIdValue, $notes]);
+        flash_set("Volunteer added successfully.");
+    }
+    redirect("volunteers.php");
+}
+
+// Load event options for volunteer assignments
+$events = $pdo->query("SELECT id, title, event_date FROM events ORDER BY event_date DESC, title ASC")->fetchAll();
+
 // Get logged-in member's email for pre-filling
 $myEmail = "";
 if (!$isStaff) {
