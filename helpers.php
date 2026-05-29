@@ -72,6 +72,10 @@ function send_church_email(string $to, string $subject, string $message): bool {
             <div class='footer'>Sent via $fromName Management System &bull; Reply directly to this email</div>
     </div></body></html>";
 
+    // Normalize newlines to CRLF for SMTP compliance
+    $htmlBody = str_replace("\r\n", "\n", $htmlBody);
+    $htmlBody = str_replace("\n", "\r\n", $htmlBody);
+
     $success = false;
     $errors = [];
 
