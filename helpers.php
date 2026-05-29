@@ -123,8 +123,8 @@ function send_church_email(string $to, string $subject, string $message): bool {
         foreach ($ports as $port) {
             if ($success) break;
             
-            // Retry up to 2 times per port for cloud deployments
-            for ($attempt = 1; $attempt <= 2 && !$success; $attempt++) {
+            // 1 attempt per port is optimal for web-request responsiveness
+            for ($attempt = 1; $attempt <= 1 && !$success; $attempt++) {
                 try {
                     $prefix = ($port === 465) ? 'ssl://' : 'tcp://';
                     $ctx = stream_context_create(['ssl' => [
@@ -133,9 +133,9 @@ function send_church_email(string $to, string $subject, string $message): bool {
                         'allow_self_signed' => true,
                     ]]);
                     
-                    $socket = @stream_socket_client($prefix . 'smtp.gmail.com:' . $port, $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $ctx);
+                    $socket = @stream_socket_client($prefix . 'smtp.gmail.com:' . $port, $errno, $errstr, 5, STREAM_CLIENT_CONNECT, $ctx);
                     if ($socket) {
-                        stream_set_timeout($socket, 30);
+                        stream_set_timeout($socket, 5);
                         $smtpRead($socket); // Banner
 
                         $smtpWrite($socket, "EHLO [127.0.0.1]");
@@ -224,17 +224,17 @@ function send_church_email(string $to, string $subject, string $message): bool {
         if ($b_host && $b_user && $b_pass) {
             $brevo_errors = [];
             
-            // Retry up to 2 times for cloud deployments
-            for ($attempt = 1; $attempt <= 2 && !$success; $attempt++) {
+            // 1 attempt is optimal for web-request responsiveness
+            for ($attempt = 1; $attempt <= 1 && !$success; $attempt++) {
                 try {
                     $prefix = ($b_enc === 'ssl') ? 'ssl://' : 'tcp://';
                     $ctx = stream_context_create(['ssl' => [
                         'verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true,
                     ]]);
-                    $socket = @stream_socket_client($prefix . $b_host . ':' . $b_port, $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $ctx);
+                    $socket = @stream_socket_client($prefix . $b_host . ':' . $b_port, $errno, $errstr, 5, STREAM_CLIENT_CONNECT, $ctx);
 
                     if ($socket) {
-                        stream_set_timeout($socket, 30);
+                        stream_set_timeout($socket, 5);
                         $smtpRead($socket);
 
                         $smtpWrite($socket, "EHLO " . gethostname());

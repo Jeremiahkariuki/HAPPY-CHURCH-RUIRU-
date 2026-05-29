@@ -228,18 +228,24 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         if ($isAjax) {
             // Return quickly to keep the UI responsive while the server continues sending emails.
-            header('Content-Type: application/json; charset=utf-8');
-            echo json_encode([
+            $response = json_encode([
                 'status' => 'success',
                 'message' => 'Your message is being sent. Check the Activity Log for updates.',
                 'redirect' => null,
             ]);
+            header('Content-Type: application/json; charset=utf-8');
+            header('Connection: close');
+            header('Content-Length: ' . (string)strlen($response));
+            echo $response;
             if (function_exists('fastcgi_finish_request')) {
                 session_write_close();
                 fastcgi_finish_request();
             } else {
                 session_write_close();
                 ignore_user_abort(true);
+                while (ob_get_level() > 0) {
+                    ob_end_flush();
+                }
                 flush();
             }
         }
