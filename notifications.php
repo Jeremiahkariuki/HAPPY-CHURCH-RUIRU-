@@ -305,7 +305,7 @@ require_once __DIR__ . "/header.php";
     <div class="col-8">
         <div class="card notification-card">
             <h2 style="margin:0 0 20px; font-weight:950; font-size:1.3rem;">Compose Message</h2>
-            <form method="post" action="<?= htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8') ?>" data-ajax="true">
+            <form method="post" action="/notifications.php" data-ajax="true">
                 <input type="hidden" name="action" value="broadcast">
                 
                 <div class="recipient-section">
@@ -362,7 +362,7 @@ require_once __DIR__ . "/header.php";
                         <span style="display:inline-block; background:var(--danger); color:#fff; font-size:0.75rem; padding:3px 10px; border-radius:999px; margin-left:8px; font-weight:900;"><?= $unreadCount ?> new</span>
                     <?php endif; ?>
                 </h2>
-                <form method="POST" action="<?= htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8') ?>" style="margin:0;" data-ajax="true">
+                <form method="POST" action="/notifications.php" style="margin:0;" data-ajax="true">
                     <input type="hidden" name="action" value="fetch_replies">
                     <button type="submit" name="fetch_replies" value="1" class="btn btn-sm" style="background:linear-gradient(135deg, rgba(46,233,166,.2), rgba(124,92,255,.2)); border:1px solid rgba(46,233,166,.3); color:var(--text); font-weight:800; border-radius:10px; padding:8px 18px;">
                         🔄 Fetch New Replies
@@ -395,13 +395,13 @@ require_once __DIR__ . "/header.php";
                                 <div class="small" style="color:var(--muted); font-weight:600;"><?= format_date($reply['received_at'], 'd M Y H:i') ?></div>
                                 <div class="reply-actions">
                                     <?php if (!$reply['is_read']): ?>
-                                    <form method="POST" action="<?= htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8') ?>" style="margin:0;" data-ajax="true">
+                                    <form method="POST" action="/notifications.php" style="margin:0;" data-ajax="true">
                                         <input type="hidden" name="action" value="mark_read">
                                         <input type="hidden" name="reply_id" value="<?= $reply['id'] ?>">
                                         <button type="submit" name="mark_read" value="1" class="btn btn-sm" style="padding:4px 10px; font-size:0.7rem; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); color:var(--text); border-radius:8px;">✓ Read</button>
                                     </form>
                                     <?php endif; ?>
-                                    <form method="POST" action="<?= htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8') ?>" style="margin:0;" onsubmit="return confirm('Delete this reply?');" data-ajax="true">
+                                    <form method="POST" action="/notifications.php" style="margin:0;" onsubmit="return confirm('Delete this reply?');" data-ajax="true">
                                         <input type="hidden" name="action" value="delete_reply">
                                         <input type="hidden" name="reply_id" value="<?= $reply['id'] ?>">
                                         <button type="submit" name="delete_reply" value="1" class="btn btn-sm" style="padding:4px 10px; font-size:0.7rem; background:rgba(255,77,109,.1); border:1px solid rgba(255,77,109,.2); color:#ff4d6d; border-radius:8px;">✕</button>
@@ -434,7 +434,7 @@ require_once __DIR__ . "/header.php";
                 <?php endif; ?>
             </div>
 
-            <form method="POST" action="<?= htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8') ?>" class="mail-setup-form" data-ajax="true" style="display:flex; flex-direction:column; gap:10px;">
+            <form method="POST" action="/notifications.php" class="mail-setup-form" data-ajax="true" style="display:flex; flex-direction:column; gap:10px;">
                 <input type="hidden" name="action" value="save_settings">
                 <div>
                     <label class="small text-muted" style="display:block; margin-bottom:4px; font-weight:700; font-size:0.75rem;">Gmail Address</label>
@@ -480,7 +480,7 @@ require_once __DIR__ . "/header.php";
         <!-- Test Email -->
         <div class="card" style="margin-top:20px; background:rgba(124,92,255,.05); border-color:rgba(124,92,255,.15);">
             <h3 style="margin:0 0 12px; font-weight:950; font-size:1.1rem;">🧪 Send Test Email</h3>
-            <form method="POST" action="<?= htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8') ?>" data-ajax="true">
+            <form method="POST" action="/notifications.php" data-ajax="true">
                 <input type="hidden" name="action" value="test_config">
                 <input class="input" name="test_email" type="email" placeholder="Enter test email..." required style="margin-bottom:10px; font-size:0.85rem;">
                 <button type="submit" class="btn btn-sm" style="width:100%; background:rgba(124,92,255,.15); border:1px solid rgba(124,92,255,.3); color:var(--text); font-weight:800; border-radius:10px;">Send Test</button>
