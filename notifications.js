@@ -39,7 +39,9 @@
             }
 
             try {
-                const response = await fetch(form.action || window.location.href, {
+                // Determine the URL to submit to - use current page without query params, or form's action
+                const submitUrl = form.action || window.location.pathname;
+                const response = await fetch(submitUrl, {
                     method: 'POST',
                     body: formData,
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
