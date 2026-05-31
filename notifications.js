@@ -39,12 +39,15 @@
             }
 
             try {
-                // Determine the URL to submit to - use current page without query params, or form's action
-                const submitUrl = form.action || window.location.pathname;
+                // Submit to current page - use a simple relative path
+                const submitUrl = form.action || '.';
                 const response = await fetch(submitUrl, {
                     method: 'POST',
                     body: formData,
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    headers: { 
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
                     credentials: 'same-origin',
                 });
 
