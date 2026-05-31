@@ -44,6 +44,7 @@ function send_response(bool $success, string $message, string $type = 'success',
         redirect($redirect);
         // redirect calls exit, so we never reach here
     }
+    redirect($_SERVER['REQUEST_URI'] ?? 'notifications.php');
 }
 
 $isAjax = is_ajax_request();
@@ -91,14 +92,14 @@ try {
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // Save settings logic
-    if (isset($_POST['save_settings'])) {
-        if (isset($_POST['reset_setup']) && $_POST['reset_setup'] === '1') {
+    if (isset($_POST['save_settings']) || isset($_POST['reset_setup'])) {
+        if (!empty($_POST['reset_setup']) && (string)$_POST['reset_setup'] === '1') {
             @unlink(__DIR__ . '/config_mail_local.php');
             flash_set("Gmail configuration cleared. Using environment variables.", "info");
             send_response(true, "Gmail configuration cleared. Using environment variables.", "info", 'notifications.php');
         } else {
-            $appPass = trim($_POST['gmail_app_pass'] ?? '');
-            $senderEmail = trim($_POST['sender_email'] ?? '');
+            $appPass = trim((string)($_POST['gmail_app_pass'] ?? ''));
+            $senderEmail = trim((string)($_POST['sender_email'] ?? ''));
             
             if ($appPass === '••••••••••••••••' || $appPass === '****************') {
                 $appPass = defined('GMAIL_PASSWORD') ? GMAIL_PASSWORD : (getenv('GMAIL_PASSWORD') ?: '');
@@ -111,7 +112,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                                 "// Auto-generated Gmail configuration\n" .
                                 "define('GMAIL_USERNAME', " . var_export($senderEmail, true) . ");\n" .
                                 "define('GMAIL_PASSWORD', " . var_export($appPass, true) . ");\n";
-                file_put_contents(__DIR__ . '/config_mail_local.php', $configContent);
+                $saved = @file_put_contents(__DIR__ . '/config_mail_local.php', $configContent);
+                if ($saved === false) {
+                    flash_set("Unable to save Gmail configuration. Check file permissions for config_mail_local.php.", "error");
+                    send_response(false, "Unable to save Gmail configuration. Check file permissions.", "error");
+                }
                 flash_set("Gmail SMTP configuration saved successfully!");
                 send_response(true, "Gmail SMTP configuration saved successfully!", 'success', 'notifications.php');
             } else {
@@ -171,7 +176,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $lines = recent_log_lines($logFile, 3);
                 if ($lines) {
                     foreach ($lines as $line) {
-                        if (str_contains($line, 'ERRORS:') || str_contains($line, 'FAILED')) {
+                        if (strpos($line, 'ERRORS:') !== false || strpos($line, 'FAILED') !== false) {
                             $lastErrors .= trim($line) . ' ';
                         }
                     }
@@ -184,6 +189,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     $targetGroups = $_POST["groups"] ?? [];
+    if (!is_array($targetGroups)) {
+        $targetGroups = [(string)$targetGroups];
+    }
+    $targetGroups = array_values(array_intersect($targetGroups, ['members', 'volunteers', 'attendees']));
+
     $customEmail  = trim((string)($_POST["custom_email"] ?? ""));
     $subject      = trim((string)($_POST["subject"] ?? ""));
     $message      = trim((string)($_POST["message"] ?? ""));
@@ -263,7 +273,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 // Fetch recent replies for display
 $replies = [];
 try {
-    $replies = $pdo->query("SELECT id, from_email, from_name, subject, body, received_at, is_read FROM email_replies ORDER BY received_at DESC LIMIT 20")->fetchAll();
+    $replies = $pdo->query("SELECT id, from_email, from_name, subject, body, received_at, is_read FROM email_replies ORDER BY received_at DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     // Table might not exist yet
 }
@@ -295,7 +305,7 @@ require_once __DIR__ . "/header.php";
     <div class="col-8">
         <div class="card notification-card">
             <h2 style="margin:0 0 20px; font-weight:950; font-size:1.3rem;">Compose Message</h2>
-            <form method="post" action="notifications.php" data-ajax="true">
+            <form method="post" action="<?= htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8') ?>" data-ajax="true">
                 <input type="hidden" name="action" value="broadcast">
                 
                 <div class="recipient-section">
@@ -352,7 +362,8 @@ require_once __DIR__ . "/header.php";
                         <span style="display:inline-block; background:var(--danger); color:#fff; font-size:0.75rem; padding:3px 10px; border-radius:999px; margin-left:8px; font-weight:900;"><?= $unreadCount ?> new</span>
                     <?php endif; ?>
                 </h2>
-                <form method="POST" style="margin:0;" data-ajax="true">
+                <form method="POST" action="<?= htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8') ?>" style="margin:0;" data-ajax="true">
+                    <input type="hidden" name="action" value="fetch_replies">
                     <button type="submit" name="fetch_replies" value="1" class="btn btn-sm" style="background:linear-gradient(135deg, rgba(46,233,166,.2), rgba(124,92,255,.2)); border:1px solid rgba(46,233,166,.3); color:var(--text); font-weight:800; border-radius:10px; padding:8px 18px;">
                         🔄 Fetch New Replies
                     </button>
@@ -384,9 +395,17 @@ require_once __DIR__ . "/header.php";
                                 <div class="small" style="color:var(--muted); font-weight:600;"><?= format_date($reply['received_at'], 'd M Y H:i') ?></div>
                                 <div class="reply-actions">
                                     <?php if (!$reply['is_read']): ?>
-                                    <form method="POST" style="margin:0;" data-ajax="true"><input type="hidden" name="reply_id" value="<?= $reply['id'] ?>"><button type="submit" name="mark_read" value="1" class="btn btn-sm" style="padding:4px 10px; font-size:0.7rem; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); color:var(--text); border-radius:8px;">✓ Read</button></form>
+                                    <form method="POST" action="<?= htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8') ?>" style="margin:0;" data-ajax="true">
+                                        <input type="hidden" name="action" value="mark_read">
+                                        <input type="hidden" name="reply_id" value="<?= $reply['id'] ?>">
+                                        <button type="submit" name="mark_read" value="1" class="btn btn-sm" style="padding:4px 10px; font-size:0.7rem; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); color:var(--text); border-radius:8px;">✓ Read</button>
+                                    </form>
                                     <?php endif; ?>
-                                    <form method="POST" style="margin:0;" onsubmit="return confirm('Delete this reply?');" data-ajax="true"><input type="hidden" name="reply_id" value="<?= $reply['id'] ?>"><button type="submit" name="delete_reply" value="1" class="btn btn-sm" style="padding:4px 10px; font-size:0.7rem; background:rgba(255,77,109,.1); border:1px solid rgba(255,77,109,.2); color:#ff4d6d; border-radius:8px;">✕</button></form>
+                                    <form method="POST" action="<?= htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8') ?>" style="margin:0;" onsubmit="return confirm('Delete this reply?');" data-ajax="true">
+                                        <input type="hidden" name="action" value="delete_reply">
+                                        <input type="hidden" name="reply_id" value="<?= $reply['id'] ?>">
+                                        <button type="submit" name="delete_reply" value="1" class="btn btn-sm" style="padding:4px 10px; font-size:0.7rem; background:rgba(255,77,109,.1); border:1px solid rgba(255,77,109,.2); color:#ff4d6d; border-radius:8px;">✕</button>
+                                    </form>
                                 </div>
                             </div>
                         </div>
@@ -415,7 +434,8 @@ require_once __DIR__ . "/header.php";
                 <?php endif; ?>
             </div>
 
-            <form method="POST" class="mail-setup-form" data-ajax="true" style="display:flex; flex-direction:column; gap:10px;">
+            <form method="POST" action="<?= htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8') ?>" class="mail-setup-form" data-ajax="true" style="display:flex; flex-direction:column; gap:10px;">
+                <input type="hidden" name="action" value="save_settings">
                 <div>
                     <label class="small text-muted" style="display:block; margin-bottom:4px; font-weight:700; font-size:0.75rem;">Gmail Address</label>
                     <input type="email" name="sender_email" class="input" placeholder="Your Gmail Address" value="<?= e($local_user) ?>" required style="font-weight:700; font-size:0.85rem; padding:10px;">
@@ -429,12 +449,11 @@ require_once __DIR__ . "/header.php";
                         <?= $local_pass ? '🔄 Update' : '🚀 Connect' ?>
                     </button>
                     <?php if ($local_pass): ?>
-                        <button type="submit" name="save_settings" value="1" onclick="this.form.reset_setup.value='1';" class="btn btn-sm" style="flex:1.2; background:rgba(255,77,109,.1); border:1px solid rgba(255,77,109,.3); color:#ff4d6d; font-weight:900; border-radius:10px; padding:10px; font-size:0.8rem;">
+                        <button type="submit" name="reset_setup" value="1" class="btn btn-sm" style="flex:1.2; background:rgba(255,77,109,.1); border:1px solid rgba(255,77,109,.3); color:#ff4d6d; font-weight:900; border-radius:10px; padding:10px; font-size:0.8rem;">
                             Disconnect
                         </button>
                     <?php endif; ?>
                 </div>
-                <input type="hidden" name="reset_setup" value="0">
                 <div class="mail-setup-help" style="margin-top:6px; border-top:1px solid rgba(255,255,255,.05); padding-top:8px; display:flex; flex-direction:column; gap:4px;">
                     <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color: var(--brand2); font-weight: 700; text-decoration: none; font-size:0.75rem;">
                         1. Click here to get App Password →
@@ -461,7 +480,7 @@ require_once __DIR__ . "/header.php";
         <!-- Test Email -->
         <div class="card" style="margin-top:20px; background:rgba(124,92,255,.05); border-color:rgba(124,92,255,.15);">
             <h3 style="margin:0 0 12px; font-weight:950; font-size:1.1rem;">🧪 Send Test Email</h3>
-            <form method="POST" data-ajax="true">
+            <form method="POST" action="<?= htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8') ?>" data-ajax="true">
                 <input type="hidden" name="action" value="test_config">
                 <input class="input" name="test_email" type="email" placeholder="Enter test email..." required style="margin-bottom:10px; font-size:0.85rem;">
                 <button type="submit" class="btn btn-sm" style="width:100%; background:rgba(124,92,255,.15); border:1px solid rgba(124,92,255,.3); color:var(--text); font-weight:800; border-radius:10px;">Send Test</button>
@@ -477,8 +496,8 @@ require_once __DIR__ . "/header.php";
                 $log = recent_log_lines($logFile, 10);
                 if ($log) {
                     foreach ($log as $line) {
-                        $isSuccess = str_contains($line, 'SUCCESS');
-                        $isError = str_contains($line, 'ERRORS:');
+                        $isSuccess = strpos($line, 'SUCCESS') !== false;
+                        $isError = strpos($line, 'ERRORS:') !== false;
                         $color = $isSuccess ? 'var(--brand2)' : ($isError ? '#ff8c00' : 'var(--danger)');
                         echo "<div style='margin-bottom:5px; border-bottom:1px solid rgba(255,255,255,.03); padding-bottom:3px; color: $color; word-break:break-all;'>" . e($line) . "</div>";
                     }
