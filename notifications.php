@@ -305,7 +305,7 @@ require_once __DIR__ . "/header.php";
     <div class="col-8">
         <div class="card notification-card">
             <h2 style="margin:0 0 20px; font-weight:950; font-size:1.3rem;">Compose Message</h2>
-            <form method="post" data-ajax="true">
+            <form method="post">
                 <input type="hidden" name="action" value="broadcast">
                 
                 <div class="recipient-section">
@@ -480,7 +480,7 @@ require_once __DIR__ . "/header.php";
         <!-- Test Email -->
         <div class="card" style="margin-top:20px; background:rgba(124,92,255,.05); border-color:rgba(124,92,255,.15);">
             <h3 style="margin:0 0 12px; font-weight:950; font-size:1.1rem;">🧪 Send Test Email</h3>
-            <form method="POST" data-ajax="true">
+            <form method="POST">
                 <input type="hidden" name="action" value="test_config">
                 <input class="input" name="test_email" type="email" placeholder="Enter test email..." required style="margin-bottom:10px; font-size:0.85rem;">
                 <button type="submit" class="btn btn-sm" style="width:100%; background:rgba(124,92,255,.15); border:1px solid rgba(124,92,255,.3); color:var(--text); font-weight:800; border-radius:10px;">Send Test</button>
