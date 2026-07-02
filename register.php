@@ -288,7 +288,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
               <option value="Member">Member</option>
               <option value="Volunteer">Volunteer</option>
               <option value="Receptionist">Receptionist</option>
-              <option value="Admin">Admin</option>
+              <option value="Attendee">Attendee</option>
             </select>
           </div>
 
