@@ -1,0 +1,60 @@
+# ============================================================
+# Happy Church Ruiru — Apache performance & routing config
+# ============================================================
+
+Options -Indexes
+DirectoryIndex index.php
+
+# ── URL Rewriting (for clean URLs) ──
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Allow actual files and directories to pass through
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+
+  # Route everything else to index.php
+  RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+# ── Gzip Compression ──
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript
+  AddOutputFilterByType DEFLATE application/javascript application/json
+  AddOutputFilterByType DEFLATE image/svg+xml application/xml
+</IfModule>
+
+# ── Browser Caching ──
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/jpeg        "access plus 30 days"
+  ExpiresByType image/png         "access plus 30 days"
+  ExpiresByType image/webp        "access plus 30 days"
+  ExpiresByType image/gif         "access plus 30 days"
+  ExpiresByType image/svg+xml     "access plus 30 days"
+  ExpiresByType text/css          "access plus 14 days"
+  ExpiresByType application/javascript "access plus 14 days"
+</IfModule>
+
+# ── Security Headers ──
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "same-origin"
+
+  # Cache static assets aggressively
+  <FilesMatch "\.(css|js|jpg|jpeg|png|gif|webp|svg|ico|woff2|woff|ttf)$">
+    Header set Cache-Control "public, max-age=2592000, immutable"
+  </FilesMatch>
+
+  # Never cache PHP responses
+  <FilesMatch "\.php$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+# ── Block access to sensitive files ──
+<FilesMatch "(^\.env|config_mail_local\.php|seed_data\.php|check_db\.php|db_check\.php|db_repair\.php|\.git)">
+  Order allow,deny
+  Deny from all
+</FilesMatch>

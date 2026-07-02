@@ -231,8 +231,17 @@ require_once __DIR__ . "/header.php";
 
 <div class="gallery-grid">
   <?php foreach ($photos as $p): ?>
-    <div class="gallery-item" onclick="openLightbox('<?= e($p['image_path']) ?>', '<?= e($p['caption'] ?: '') ?>')">
-      <img src="<?= e($p['image_path']) ?>" loading="lazy">
+    <?php
+      // Build a clean root-relative URL that works both locally (in subfolder) and on Render (root)
+      $imgSrc = '/' . ltrim($p['image_path'], '/');
+      // Detect if running in a subfolder (e.g. /church_events_system/)
+      $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+      if ($scriptDir && $scriptDir !== '/') {
+          $imgSrc = $scriptDir . '/' . ltrim($p['image_path'], '/');
+      }
+    ?>
+    <div class="gallery-item" onclick="openLightbox('<?= e($imgSrc) ?>', '<?= e($p['caption'] ?: '') ?>')">
+      <img src="<?= e($imgSrc) ?>" loading="lazy" onerror="this.closest('.gallery-item').style.display='none'">
       <div class="gallery-overlay">
         <?php if ($p['caption']): ?>
           <p class="gallery-caption"><?= nl2br(e($p['caption'])) ?></p>
