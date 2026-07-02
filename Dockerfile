@@ -6,7 +6,7 @@ COPY install-php-extensions /usr/local/bin/
 RUN chmod +x /usr/local/bin/install-php-extensions && \
     install-php-extensions pdo pdo_mysql imap openssl opcache
 
-# ── OPcache: dramatically speeds up PHP on Render (avoids re-compiling files) ──
+# ── OPcache: dramatically speeds up PHP on Render ──
 RUN { \
     echo 'opcache.enable=1'; \
     echo 'opcache.enable_cli=0'; \
@@ -33,10 +33,10 @@ RUN { \
 # Enable Apache modules used by the app and faster static asset delivery
 RUN a2enmod rewrite headers expires deflate http2
 
-# ── Apache MPM event for concurrent connections on Render free tier ──
+# Apache MPM event for concurrent connections on Render free tier
 RUN a2dismod mpm_prefork && a2enmod mpm_event || true
 
-# ── Performance + compression config ──
+# Performance + compression config
 RUN printf '%s\n' \
     '<IfModule mod_deflate.c>' \
     '  AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript application/javascript application/json image/svg+xml' \
@@ -54,7 +54,6 @@ RUN printf '%s\n' \
     '  <FilesMatch "\.(css|js|png|jpg|jpeg|gif|svg|webp)$">' \
     '    Header set Cache-Control "public, max-age=2592000, immutable"' \
     '  </FilesMatch>' \
-    '  # Security headers' \
     '  Header always set X-Content-Type-Options "nosniff"' \
     '  Header always set X-Frame-Options "SAMEORIGIN"' \
     '  Header always set Referrer-Policy "same-origin"' \
@@ -62,11 +61,13 @@ RUN printf '%s\n' \
     > /etc/apache2/conf-available/performance.conf \
     && a2enconf performance
 
-# Change Apache port to 10000 for Render compatibility
-RUN sed -i 's/Listen 80/Listen 10000/' /etc/apache2/ports.conf \
-    && sed -i 's/:80/:10000/' /etc/apache2/sites-available/000-default.conf
+# ── Configure Apache to use Render's dynamic ${PORT} environment variable natively ──
+# Render sets the $PORT variable at runtime. We default it to 10000 if not set.
+ENV PORT=10000
+RUN sed -i 's/Listen 80/Listen ${PORT}/' /etc/apache2/ports.conf \
+    && sed -i 's/:80/:${PORT}/' /etc/apache2/sites-available/000-default.conf
 
-# ── Enable AllowOverride for .htaccess in document root ──
+# Enable AllowOverride for .htaccess in document root
 RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
 
 # Copy project files into the container
@@ -79,9 +80,5 @@ RUN chmod -R 755 /var/www/html \
     && chmod -R 775 /var/www/html/uploads /var/www/html/logs \
     && chown -R www-data:www-data /var/www/html/uploads /var/www/html/logs
 
-# Create a dynamic entrypoint to bind Apache to Render's $PORT variable at runtime
-RUN printf '#!/bin/bash\ntarget_port=${PORT:-10000}\nsed -i "s/Listen .*/Listen $target_port/" /etc/apache2/ports.conf\nsed -i "s/<VirtualHost .*/<VirtualHost *:$target_port>/" /etc/apache2/sites-available/000-default.conf\nexec apache2-foreground\n' > /usr/local/bin/start.sh \
-    && chmod +x /usr/local/bin/start.sh
-
-# Use dynamic entrypoint instead of default foreground
-CMD ["/usr/local/bin/start.sh"]
+# Use the standard Apache command (natively uses the configuration updated above)
+CMD ["apache2-foreground"]
