@@ -15,6 +15,7 @@ test_login_output.html
 # Temp files
 wipe_temp.php
 debug_attendance.php
+test_post_notifications.php
 
 # OS files
 Thumbs.db
