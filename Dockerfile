@@ -31,7 +31,8 @@ RUN { \
 } > /usr/local/etc/php/conf.d/church-tuning.ini
 
 # Enable Apache modules used by the app and faster static asset delivery
-RUN a2enmod rewrite headers expires deflate http2
+# NOTE: Keep mpm_prefork — mpm_event is incompatible with mod_php (causes crash on startup)
+RUN a2enmod rewrite headers expires deflate
 
 # Performance + compression config
 RUN printf '%s\n' \
