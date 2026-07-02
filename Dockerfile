@@ -33,9 +33,6 @@ RUN { \
 # Enable Apache modules used by the app and faster static asset delivery
 RUN a2enmod rewrite headers expires deflate http2
 
-# Apache MPM event for concurrent connections on Render free tier
-RUN a2dismod mpm_prefork && a2enmod mpm_event || true
-
 # Performance + compression config
 RUN printf '%s\n' \
     '<IfModule mod_deflate.c>' \
