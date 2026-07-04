@@ -26,8 +26,7 @@ try {
         PDO::ATTR_TIMEOUT => 5, // 5 second timeout to prevent hangs
     ]);
     
-    // Auto-cleanup past events (will cascade delete related attendees/volunteers)
-    $pdo->exec("DELETE FROM events WHERE event_date < CURRENT_DATE");
+    // Removing auto-cleanup so records don't disappear automatically
 } catch(PDOException $e) {
     try {
         // Advanced Auto-Fallback to Embedded SQLite for Cloud / Zero-Config environments

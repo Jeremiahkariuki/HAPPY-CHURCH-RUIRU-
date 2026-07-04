@@ -151,7 +151,7 @@ function send_church_email(string $to, string $subject, string $message): bool {
                         'allow_self_signed' => true,
                     ]]);
                     
-                    $socket = @stream_socket_client($prefix . 'smtp.gmail.com:' . $port, $errno, $errstr, 5, STREAM_CLIENT_CONNECT, $ctx);
+                    $socket = @stream_socket_client($prefix . 'smtp.gmail.com:' . $port, $errno, $errstr, 2, STREAM_CLIENT_CONNECT, $ctx);
                     if ($socket) {
                         stream_set_timeout($socket, 5);
                         $smtpRead($socket); // Banner
@@ -252,7 +252,7 @@ function send_church_email(string $to, string $subject, string $message): bool {
                     $ctx = stream_context_create(['ssl' => [
                         'verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true,
                     ]]);
-                    $socket = @stream_socket_client($prefix . $b_host . ':' . $b_port, $errno, $errstr, 5, STREAM_CLIENT_CONNECT, $ctx);
+                    $socket = @stream_socket_client($prefix . $b_host . ':' . $b_port, $errno, $errstr, 2, STREAM_CLIENT_CONNECT, $ctx);
 
                     if ($socket) {
                         stream_set_timeout($socket, 5);

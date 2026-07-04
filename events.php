@@ -437,7 +437,7 @@ require_once __DIR__ . "/header.php";
                       <?php elseif ($r["status"] === "Scheduled" || $r["status"] === "Ongoing"): ?>
                          <form method="post" action="events.php?action=apply&id=<?= (int)$r["id"] ?>" style="display:inline;">
                              <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
-                             <button type="submit" class="btn" style="padding: 6px 16px; font-size: 0.8rem;" onclick="return confirm('Register for <?= e(addslashes($r["title"])) ?>?');">✋ Apply</button>
+                             <button type="submit" class="btn" style="padding: 6px 16px; font-size: 0.8rem;" onclick="if(confirm('Register for <?= e(addslashes($r[\"title\"])) ?>?')) { this.innerHTML = '⏳ Applying...'; this.style.opacity = '0.7'; return true; } else { return false; }">✋ Apply</button>
                          </form>
                       <?php else: ?>
                          <span class="small" style="color:var(--muted); font-weight:600;">Closed</span>
